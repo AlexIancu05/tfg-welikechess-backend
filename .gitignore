@@ -1,0 +1,12 @@
+.env
+.venv/
+.idea/
+.pytest_cache/
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+db.sqlite3
+db.sqlite3-journal
