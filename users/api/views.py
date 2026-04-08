@@ -1,4 +1,4 @@
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, viewsets, filters
 from users.api.permissions import IsOwnerOrReadOnly
 
 from users.api.serializers import *
@@ -7,7 +7,13 @@ from users.api import services
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
+
+    lookup_field = "username"
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["username"]
+
     serializer_class = UserSerializerComplete
+
     permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
@@ -22,13 +28,16 @@ class UserViewSet(viewsets.ModelViewSet):
         return UserPublicSerializer
 
     def get_permissions(self):
-        if self.action == 'create':
+        if self.action == "create":
             return [permissions.AllowAny()]
 
-        elif self.action in ['update', 'partial_update', 'destroy']:
+        if self.action in ["retrieve", "list"]:
+            return [permissions.AllowAny()]
+
+        if self.action in ["update", "partial_update", "destroy"]:
             return [(IsOwnerOrReadOnly | permissions.IsAdminUser)()]
 
-        return [permissions.IsAuthenticated()]
+        return super().get_permissions()
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -39,10 +48,4 @@ class UserViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        data = serializer.validated_data
-
-        services.create_user(
-            email=data.get("email"),
-            username=data.get("username"),
-            password=data.get("password")
-        )
+        serializer.save()
