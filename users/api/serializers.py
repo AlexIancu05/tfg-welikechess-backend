@@ -1,6 +1,7 @@
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
+from users.api import services
 from users.models import User
 
 class UserSerializerComplete(serializers.ModelSerializer):
@@ -24,6 +25,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = User
         fields = ["email", "username", "password"]
 
+    def create(self, validated_data):
+        return services.create_user(**validated_data)
+
 class UserPublicSerializer(serializers.ModelSerializer):
     """
     Serializer para listar usuarios y ver perfiles ajenos (GET)
@@ -32,7 +36,15 @@ class UserPublicSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "username", "elo_blitz", "date_joined"]
+        fields = [
+            "id",
+            "username",
+            "elo_blitz",
+            "elo_rapid",
+            "elo_bullet",
+            "elo_classical",
+            "date_joined"
+        ]
         # TODO: Añadir historial
 
 class UserDetailSerializer(serializers.ModelSerializer):

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "rest_framework",
     "users",
+    "games",
 
 ]
 
