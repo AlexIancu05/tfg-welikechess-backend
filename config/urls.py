@@ -7,9 +7,6 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from users.api import views
 
-router = routers.DefaultRouter()
-router.register(r"users", views.UserViewSet)
-
 urlpatterns = [
     path("", RedirectView.as_view(url='/admin/', permanent=False)),
     path("admin/", admin.site.urls),
@@ -17,5 +14,6 @@ urlpatterns = [
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger"),
     path("api/auth/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-    path("api/users/", include("users.api.urls"))
+    path("api/users/", include("users.api.urls")),
+    path("api/games/", include("games.api.urls"))
 ]
