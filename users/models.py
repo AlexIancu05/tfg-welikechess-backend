@@ -29,6 +29,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ["username"]
 
     class Meta:
+        ordering = ["-date_joined"]
         indexes = [
             #Busqueda de partida mas rapida
             models.Index(fields=['is_active']),
@@ -47,4 +48,4 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
     def __str__(self):
-        return f"{self.username} ({self.email})"
+        return f"{self.username}"

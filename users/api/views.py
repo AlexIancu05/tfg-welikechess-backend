@@ -2,7 +2,6 @@ from rest_framework import permissions, viewsets, filters
 from users.api.permissions import IsOwnerOrReadOnly
 
 from users.api.serializers import *
-from users.api import services
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -12,7 +11,7 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ["username"]
 
-    serializer_class = UserSerializerComplete
+    serializer_class = UserPublicSerializer
 
     permission_classes = [permissions.IsAuthenticated]
 
@@ -31,7 +30,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if self.action == "create":
             return [permissions.AllowAny()]
 
-        if self.action in ["retrieve", "list"]:
+        if self.action in ["retrieve", "list", "metadata"]:
             return [permissions.AllowAny()]
 
         if self.action in ["update", "partial_update", "destroy"]:

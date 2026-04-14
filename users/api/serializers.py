@@ -54,4 +54,6 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'elo_blitz', 'is_active', 'date_joined']
+        fields = ["id", "email", "username", "elo_blitz", "elo_rapid", "elo_bullet", "elo_classical", "is_active", "date_joined"]
+
+        read_only_fields = ["id", "email", "elo_blitz", "elo_rapid", "elo_bullet", "elo_classical", "is_active", "date_joined"]
