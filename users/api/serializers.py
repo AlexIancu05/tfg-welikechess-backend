@@ -1,7 +1,7 @@
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from users.api import services
+from users import services
 from users.models import User
 
 class UserSerializerComplete(serializers.ModelSerializer):
@@ -54,4 +54,6 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'elo_blitz', 'is_active', 'date_joined']
+        fields = ["id", "email", "username", "elo_blitz", "elo_rapid", "elo_bullet", "elo_classical", "is_active", "date_joined"]
+
+        read_only_fields = ["id", "email", "elo_blitz", "elo_rapid", "elo_bullet", "elo_classical", "is_active", "date_joined"]
