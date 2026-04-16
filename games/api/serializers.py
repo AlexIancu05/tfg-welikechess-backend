@@ -65,3 +65,8 @@ class GameDetailSerializer(serializers.ModelSerializer):
         if obj.finished_at:
             return (obj.finished_at - obj.created_at).total_seconds()
         return None
+
+class GameTotalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Game
+        fields = "__all__"

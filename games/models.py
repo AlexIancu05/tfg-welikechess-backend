@@ -1,5 +1,6 @@
 import uuid
 
+import chess
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
@@ -27,8 +28,6 @@ class Game(models.Model):
         ("1/2-1/2", "Tablas"),
         ("*", "En curso")
     ]
-
-    BASE_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
     TERMINATION_CHOICES = [
         ('checkmate', 'Jaque Mate'),
@@ -71,7 +70,7 @@ class Game(models.Model):
     ranked = models.BooleanField(default=True)
 
     #Estado del tablero
-    current_fen = models.CharField(max_length=120, default=BASE_FEN)
+    current_fen = models.CharField(max_length=120, default=chess.STARTING_FEN)
 
     #Historial de movimientos
     pgn = models.TextField(blank=True, default="")
