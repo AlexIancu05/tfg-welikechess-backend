@@ -13,6 +13,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True, max_length=256)
     username = models.CharField(unique=True, max_length=50)
 
+    avatar = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        default="/avatars/b_king_avatar.png"
+    )
+
     elo_blitz = models.IntegerField(default=1200)
     elo_rapid = models.IntegerField(default=1200)
     elo_bullet = models.IntegerField(default=1200)
@@ -30,6 +37,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     class Meta:
         ordering = ["-date_joined"]
+        verbose_name = "usuario"
+        verbose_name_plural = "usuarios"
         indexes = [
             #Busqueda de partida mas rapida
             models.Index(fields=['is_active']),
@@ -45,7 +54,5 @@ class User(AbstractBaseUser, PermissionsMixin):
                 name="username_case_insensitive_unique"
             )
         ]
-
-
     def __str__(self):
         return f"{self.username}"

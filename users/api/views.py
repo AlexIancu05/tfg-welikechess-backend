@@ -1,4 +1,7 @@
 from rest_framework import permissions, viewsets, filters
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
 from users.api.permissions import IsOwnerOrReadOnly
 
 from users.api.serializers import *
@@ -48,3 +51,26 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save()
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
+    def global_ranking(self, request):
+        """
+        Endpoint: api/users/global_ranking/?type=bullet
+        Lee el tipo de ranking desde la URL y lo solicita al servicio.
+        """
+        perf_type = request.query_params.get("type", "blitz")
+        data = services.get_external_ranking(perf_type)
+
+        return Response(data)
+
+    @action(detail=False, methods=["get", "patch"], permission_classes=[permissions.IsAuthenticated])
+    def me(self, request):
+        user = request.user
+        if request.method == "GET":
+            serializer = UserDetailSerializer(user)
+            return Response(serializer.data)
+        serializer = UserDetailSerializer(user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
