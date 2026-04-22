@@ -30,7 +30,7 @@ class MatchmakingService:
         return game
 
     @staticmethod
-    def _search_available_game(user, game_mode) -> Game:
+    def _search_available_game(user, game_mode, initial_time, increment) -> Game:
         """Busca partidas disponibles para emparejar al usuario que esta buscando partida"""
         user_elo = getattr(user, f"elo_{game_mode}", 1200)
         low_elo = user_elo - 100
@@ -38,32 +38,36 @@ class MatchmakingService:
 
         filters = {
             f"white_player__elo_{game_mode}__gte": low_elo,
-            f"white_player__elo_{game_mode}__lte": high_elo
+            f"white_player__elo_{game_mode}__lte": high_elo,
         }
 
         return Game.objects.filter(
             status="waiting",
             mode=game_mode,
+            initial_time=initial_time,
+            increment=increment,
             **filters
         ).order_by("created_at").first()
 
     @staticmethod
-    def _create_new_game(user, game_mode):
+    def _create_new_game(user, game_mode, initial_time, increment) -> Game:
         """Crea una nueva partida"""
 
         return Game.objects.create(
             white_player=user,
             status="waiting",
-            mode=game_mode
+            mode=game_mode,
+            initial_time=initial_time,
+            increment=increment
         )
 
     @staticmethod
-    def join_queue(user, game_mode="blitz"):
+    def join_queue(user, game_mode="blitz", initial_time=600, increment=0):
         """Se une a la cola. En caso de no haber partida, la crea y devuelve estado waiting,
-           en caso de si haber, la encuentra y devuelve el estado match_found"""
+           en caso de si haber devuelve el estado match_found"""
         MatchmakingService._clean_ghost_games()
 
-        found_game = MatchmakingService._search_available_game(user, game_mode)
+        found_game = MatchmakingService._search_available_game(user, game_mode, initial_time, increment)
         if found_game:
             if found_game.white_player == user:
                 return None, "error_cloned"
@@ -73,4 +77,4 @@ class MatchmakingService:
             available_game.save()
             return available_game, "match_found"
 
-        return MatchmakingService._create_new_game(user, game_mode), "waiting"
+        return MatchmakingService._create_new_game(user, game_mode, initial_time, increment), "waiting"

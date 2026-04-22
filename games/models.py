@@ -88,7 +88,10 @@ class Game(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["status", "created_at"]),
+            models.Index(
+                fields=["status", "mode", "initial_time", "increment", "created_at"],
+                name="matchmaking_idx"
+            ),
             models.Index(fields=["white_player"]),
             models.Index(fields=["black_player"]),
             models.Index(fields=["winner"])
