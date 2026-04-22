@@ -1,9 +1,11 @@
 import random
 from datetime import timedelta
 
+import chess
 from django.utils import timezone
 
 from games.models import Game
+from games.websockets.constants import WSErrorCodes
 
 
 class MatchmakingService:
@@ -63,8 +65,10 @@ class MatchmakingService:
 
     @staticmethod
     def join_queue(user, game_mode="blitz", initial_time=600, increment=0):
-        """Se une a la cola. En caso de no haber partida, la crea y devuelve estado waiting,
-           en caso de si haber devuelve el estado match_found"""
+        """
+        Se une a la cola. En caso de no haber partida, la crea y devuelve estado waiting,
+        en caso de si haber devuelve el estado match_found
+        """
         MatchmakingService._clean_ghost_games()
 
         found_game = MatchmakingService._search_available_game(user, game_mode, initial_time, increment)
@@ -78,3 +82,66 @@ class MatchmakingService:
             return available_game, "match_found"
 
         return MatchmakingService._create_new_game(user, game_mode, initial_time, increment), "waiting"
+
+class GameService:
+    @staticmethod
+    def process_move(game: Game, user, move_uci: str):
+        """
+
+        """
+        if game.status != "in_progress":
+            return False, "La partida no esta en curso", WSErrorCodes.GENERIC_ERROR
+
+        board = chess.Board(game.current_fen)
+        is_white_turn = board.turn == chess.WHITE
+
+        if is_white_turn and user != game.white_player:
+            return False, "Turno de blancas", WSErrorCodes.WRONG_TURN
+        elif not is_white_turn and user != game.black_player:
+            return False, "Turno de negras", WSErrorCodes.WRONG_TURN
+
+        try:
+            move = chess.Move.from_uci(move_uci)
+        except (ValueError, TypeError):
+            return False, "Formato UCI inválido", WSErrorCodes.INVALID_JSON
+
+        if move not in board.legal_moves:
+            return False, "Movimiento ilegal", WSErrorCodes.ILLEGAL_MOVE
+
+        san_move = board.san(move)
+        game.pgn += f"{san_move} "
+        board.push(move)
+
+        game.current_fen = board.fen()
+        outcome = board.outcome(claim_draw=True)
+
+        if outcome:
+            game.status = "completed"
+
+            if outcome.winner == chess.WHITE:
+                game.result = "1-0"
+                game.winner = game.white_player
+            elif outcome.winner == chess.BLACK:
+                game.result = "0-1"
+                game.winner = game.black_player
+            else:
+                game.result = "1/2-1/2"
+
+                termination_map = {
+                    chess.Termination.CHECKMATE: "checkmate",
+                    chess.Termination.STALEMATE: "draw",  # Rey ahogado
+                    chess.Termination.INSUFFICIENT_MATERIAL: "draw",
+                    chess.Termination.FIFTY_MOVES: "draw",
+                    chess.Termination.THREEFOLD_REPETITION: "draw"
+                }
+                game.termination_reason = termination_map.get(outcome.termination, "draw")
+
+            game.save()
+
+            return True, {
+                "move": move_uci,
+                "san": san_move,
+                "fen": game.current_fen,
+                "status": game.status,
+                "result": game.result
+            }, None
