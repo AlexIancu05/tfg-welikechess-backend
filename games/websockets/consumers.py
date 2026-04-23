@@ -44,11 +44,10 @@ class MatchmakingConsumer(WebsocketConsumer):
                 self.ticket_group_name,
                 self.channel_name
             )
-        if self.scope["user"].is_authenticated:
-            Game.objects.filter(
-                white_player=self.scope["user"],
-                status="waiting"
-            ).delete()
+
+            # Borramos la partida si este WebSocket en concreto estaba esperando
+            game_id_str = self.ticket_group_name.replace("ticket_", "")
+            Game.objects.filter(id=game_id_str, status="waiting").delete()
 
     def receive(self, text_data = None, bytes_data = None):
         if text_data is None:
@@ -114,7 +113,7 @@ class MatchmakingConsumer(WebsocketConsumer):
 
 class GameConsumer(WebsocketConsumer):
     def __init__(self, *args, **kwargs):
-        super().__init__(args, kwargs)
+        super().__init__(*args, **kwargs)
         self.game_id = None
         self.room_group_name = None
         self.game = None
@@ -136,6 +135,27 @@ class GameConsumer(WebsocketConsumer):
         if close_connection:
             self.close(code=close_code)
 
+    def _get_player_color(self):
+        user = self.scope["user"]
+        if self.game.white_player == user:
+            return "w"
+        elif self.game.black_player == user:
+            return "b"
+        else:
+            return None
+
+    def _serialize_player(self, player):
+        if player is None:
+            return None
+        return {
+            "id": str(player.id),
+            "username": player.username,
+            "elo_blitz": getattr(player, "elo_blitz", 1200),
+            "elo_rapid": getattr(player, "elo_rapid", 1200),
+            "elo_bullet": getattr(player, "elo_bullet", 1200),
+            "elo_classical": getattr(player, "elo_classical", 1200),
+        }
+
     def connect(self):
         user = self.scope["user"]
         self.game_id = self.scope["url_route"]["kwargs"]["game_id"]
@@ -150,7 +170,7 @@ class GameConsumer(WebsocketConsumer):
 
         # Cargar partida
         try:
-            self.game = Game.objects.get(id=self.game_id)
+            self.game = Game.objects.select_related("white_player", "black_player").get(id=self.game_id)
         except ObjectDoesNotExist:
             self.send_error(message="Partida no encontrada", close_connection=True, close_code=WSErrorCodes.GAME_NOT_FOUND)
             return
@@ -159,13 +179,22 @@ class GameConsumer(WebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
-        self.send(json.dumps(
-            {
-                "type": "game_state",
-                "fen": self.game.current_fen,
-                "status": self.game.status
-            }
-        ))
+
+        color = self._get_player_color()
+
+        self.send(text_data=json.dumps({
+            "type": "game_state",
+            "fen": self.game.current_fen,
+            "status": self.game.status,
+            "color": color,
+            "initial_time": self.game.initial_time,
+            "increment": self.game.increment,
+            "time_white": self.game.white_time_left,
+            "time_black": self.game.black_time_left,
+            "mode": self.game.mode,
+            "white_player": self._serialize_player(self.game.white_player),
+            "black_player": self._serialize_player(self.game.black_player),
+        }))
 
     def disconnect(self, code):
         if self.room_group_name:
@@ -182,20 +211,26 @@ class GameConsumer(WebsocketConsumer):
             data = json.loads(text_data)
         except json.JSONDecodeError:
             self.send_error(message="Formato JSON inválido", close_code=WSErrorCodes.INVALID_JSON)
-            return 
-        
+            return
+
         action = data.get("action")
-        
+
         if action == "make_move":
             self.handle_move(data.get("move"))
+        elif action == "resign":
+            self.handle_resign()
+        elif action == "offer_draw":
+            self.handle_offer_draw()
+        elif action == "accept_draw":
+            self.handle_accept_draw()
         else:
             self.send_error(message=f"Acción desconocida: '{action}'", close_code=WSErrorCodes.GENERIC_ERROR)
-            
+
     def handle_move(self, move_uci):
         """Procesa un movimiento en formato UCI. EJ: e2e4"""
         self.game.refresh_from_db()
 
-        success, result_data, error_code = GameService.process_move(self.game, self.scope["user"], move_uci)
+        success, result_data, error_code = GameService.process_move(self.game_id, self.scope["user"], move_uci)
 
         if not success:
             self.send_error(message=result_data, close_code=error_code)
@@ -216,5 +251,45 @@ class GameConsumer(WebsocketConsumer):
             "san": event["san"],
             "fen": event["fen"],
             "status": event["status"],
-            "result": event["result"]
+            "result": event["result"],
+            "time_white": event.get("time_white"),
+            "time_black": event.get("time_black"),
         }))
+
+    def handle_resign(self):
+        success, data, error_code = GameService.resign_game(self.game_id, self.scope["user"])
+        if success:
+            self.broadcast_game_update(data)
+        else:
+            self.send_error(message=data, close_code=error_code)
+
+    def handle_offer_draw(self):
+        async_to_sync(self.channel_layer.group_send)(
+            self.room_group_name,
+            {
+                "type": "game_message",
+                "message": {
+                    "action": "draw_offered",
+                    "sender": self.scope["user"].username
+                }
+            }
+        )
+
+    def handle_accept_draw(self):
+        success, data, error_code = GameService.accept_draw(self.game_id, self.scope["user"])
+        if success:
+            self.broadcast_game_update(data)
+        else:
+            self.send_error(message=data, close_code=error_code)
+
+    def broadcast_game_update(self, data):
+        async_to_sync(self.channel_layer.group_send)(
+            self.room_group_name,
+            {
+                "type": "game_message",
+                "message": data
+            }
+        )
+
+    def game_message(self, event):
+        self.send(text_data=json.dumps(event["message"]))

@@ -69,13 +69,16 @@ class Game(models.Model):
     #Ranked o Casual
     ranked = models.BooleanField(default=True)
 
+    # Relojes de la partida (segundos)
+    white_time_left = models.FloatField(null=True, blank=True)
+    black_time_left = models.FloatField(null=True, blank=True)
+    last_move_at = models.DateTimeField(null=True, blank=True)
+
     #Estado del tablero
     current_fen = models.CharField(max_length=120, default=chess.STARTING_FEN)
 
     #Historial de movimientos
     pgn = models.TextField(blank=True, default="")
-
-    last_move_at = models.DateTimeField(null=True, blank=True)
 
     white_elo_change = models.IntegerField(default=0)
     black_elo_change = models.IntegerField(default=0)
