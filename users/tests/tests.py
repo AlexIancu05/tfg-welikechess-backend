@@ -90,7 +90,6 @@ class UserModelTest(TestCase):
         self.assertEqual(self.user.elo_blitz, 1200)
         self.assertEqual(self.user.elo_rapid, 1200)
         self.assertEqual(self.user.elo_bullet, 1200)
-        self.assertEqual(self.user.elo_classical, 1200)
 
     def test_username_field_es_email(self):
         self.assertEqual(User.USERNAME_FIELD, "email")

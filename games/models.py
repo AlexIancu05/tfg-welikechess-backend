@@ -18,8 +18,7 @@ class Game(models.Model):
     MODE_CHOICES = [
         ('bullet', 'Bullet'),
         ('blitz', 'Blitz'),
-        ('rapid', 'Rapid'),
-        ('classical', 'Clásica'),
+        ('rapid', 'Rapid')
     ]
 
     RESULT_CHOICES = [

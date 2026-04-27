@@ -60,7 +60,7 @@ class MatchmakingConsumer(WebsocketConsumer):
             return
 
         action = text_data_json.get("action")
-        game_mode = text_data_json.get("mode")
+        game_mode = text_data_json.get("mode", "blitz")
         initial_time = text_data_json.get("initial_time", 600)
         increment = text_data_json.get("increment", 0)
 
@@ -153,7 +153,6 @@ class GameConsumer(WebsocketConsumer):
             "elo_blitz": getattr(player, "elo_blitz", 1200),
             "elo_rapid": getattr(player, "elo_rapid", 1200),
             "elo_bullet": getattr(player, "elo_bullet", 1200),
-            "elo_classical": getattr(player, "elo_classical", 1200),
         }
 
     def connect(self):

@@ -43,7 +43,6 @@ class UserPublicSerializer(serializers.ModelSerializer):
             "elo_blitz",
             "elo_rapid",
             "elo_bullet",
-            "elo_classical",
             "date_joined"
         ]
         # TODO: Añadir historial
@@ -63,7 +62,6 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "elo_blitz",
             "elo_rapid",
             "elo_bullet",
-            "elo_classical",
             "is_active",
             "date_joined"
         ]
@@ -74,7 +72,6 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "elo_blitz",
             "elo_rapid",
             "elo_bullet",
-            "elo_classical",
             "is_active",
             "date_joined"
         ]

@@ -14,7 +14,7 @@ class CustomUserAdmin(UserAdmin):
     # Agrupaciones para que se vea mas bonito
     fieldsets = (
         ('Inicio Sesión', {'fields': ('email', 'username', 'password')}),
-        ('Elo', {'fields': ('elo_blitz', 'elo_rapid', 'elo_bullet', 'elo_classical')}),
-        ('Perfil', {'fields': ('image', 'friends')}),
+        ('Elo', {'fields': ('elo_blitz', 'elo_rapid', 'elo_bullet')}),
+        ('Perfil', {'fields': ('avatar', 'friends')}),
         ('Permisos', {'fields': ('is_active', 'is_staff', 'is_superuser')}),
     )

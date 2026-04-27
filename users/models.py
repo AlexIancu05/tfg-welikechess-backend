@@ -23,7 +23,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     elo_blitz = models.IntegerField(default=1200)
     elo_rapid = models.IntegerField(default=1200)
     elo_bullet = models.IntegerField(default=1200)
-    elo_classical = models.IntegerField(default=1200)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -46,7 +45,6 @@ class User(AbstractBaseUser, PermissionsMixin):
             models.Index(fields=['elo_blitz']),
             models.Index(fields=['elo_rapid']),
             models.Index(fields=['elo_bullet']),
-            models.Index(fields=['elo_classical']),
         ]
         constraints = [
             models.UniqueConstraint(
