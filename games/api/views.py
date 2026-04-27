@@ -1,11 +1,11 @@
 from django.db.models import Q
+from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from games.api.serializers import *
 from games.models import Game
 
-from rest_framework import permissions, viewsets, filters
 
 class GameViewSet(viewsets.ReadOnlyModelViewSet):
 

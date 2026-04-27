@@ -1,11 +1,10 @@
 from django.test import TestCase
 from django.urls import reverse
-from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
+from rest_framework.test import APITestCase
 
-from users.models import User
-from users.managers import CustomUserManager
 from users.api.permissions import IsOwnerOrReadOnly
+from users.models import User
 
 
 # ─────────────────────────────────────────────

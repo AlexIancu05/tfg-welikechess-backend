@@ -1,5 +1,6 @@
 from datetime import timedelta
 from pathlib import Path
+
 from decouple import config
 from drf_spectacular.settings import SPECTACULAR_DEFAULTS
 

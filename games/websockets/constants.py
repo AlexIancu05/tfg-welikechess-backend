@@ -12,3 +12,6 @@ class WSErrorCodes(IntEnum):
     INVALID_GAME = 4005
     WRONG_TURN = 4006
     ILLEGAL_MOVE = 4007
+
+class StockfishErrorCodes(IntEnum):
+    GENERIC_ERROR = 4000

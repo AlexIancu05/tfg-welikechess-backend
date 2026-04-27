@@ -4,6 +4,7 @@ from rest_framework import serializers
 from users import services
 from users.models import User
 
+
 class UserSerializerComplete(serializers.ModelSerializer):
     """
     SERIALIZADOR SOLO PARA TESTING

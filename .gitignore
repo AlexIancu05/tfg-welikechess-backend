@@ -13,3 +13,5 @@ db.sqlite3-journal
 
 postman
 .postman
+
+engines/stockfish/*

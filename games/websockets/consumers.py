@@ -1,8 +1,11 @@
 import json
+import os
 
 import chess
+import chess.engine
 from asgiref.sync import async_to_sync
-from channels.generic.websocket import WebsocketConsumer
+from channels.generic.websocket import WebsocketConsumer, AsyncWebsocketConsumer
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
 from games.models import Game
@@ -292,3 +295,103 @@ class GameConsumer(WebsocketConsumer):
 
     def game_message(self, event):
         self.send(text_data=json.dumps(event["message"]))
+
+class AIGameConsumer(AsyncWebsocketConsumer):
+    async def send_error(self, message: str, close_connection: bool = False, close_code: WSErrorCodes = WSErrorCodes.GENERIC_ERROR):
+        """
+        Envía mensajes de error al front.
+        Si close_connection es True, cierra el Websocket
+        close_code son codigos de errores nuestros internos, todos estando en constants.WSErrorCodes
+        """
+        await self.send(text_data=json.dumps(
+            {
+                "type": "error",
+                "code": close_code,
+                "message": message
+            }
+        ))
+
+        if close_connection:
+            await self.close(code=close_code)
+
+    def __init__(self, *args, **kwargs):
+        self.board = None
+        self.engine_path = None
+        self.transport = None
+        self.engine = None
+
+        super().__init__(*args, **kwargs)
+
+    async def connect(self):
+        await self.accept()
+
+        self.board = chess.Board()
+        self.engine_path = os.path.join(
+            settings.BASE_DIR,
+            "engines",
+            "stockfish",
+            "stockfish-windows-x86-64-avx2.exe"
+        )
+
+        self.transport, self.engine = await chess.engine.popen_uci(self.engine_path)
+
+        skill_level = self.scope["url_route"]["kwargs"].get("skill_level", 5)
+        await self.engine.configure({"Skill Level": skill_level})
+
+    async def disconnect(self, code):
+        if self.engine is not None:
+            await self.engine.quit()
+
+    async def receive(self, text_data = None, bytes_data = None):
+        if text_data is None:
+            return
+
+        try:
+            data = json.loads(text_data)
+        except json.JSONDecodeError:
+            await self.send_error(message="Formato JSON inválido", close_code=WSErrorCodes.INVALID_JSON)
+            return
+
+        action = data.get("action")
+
+        if action == "move":
+            move_uci = data.get("move")
+            try:
+                user_move = chess.Move.from_uci(move_uci)
+            except (ValueError, TypeError):
+                await self.send_error(message="Movimiento inválido", close_code=WSErrorCodes.INVALID_JSON)
+                return
+
+            if user_move in self.board.legal_moves:
+                self.board.push(user_move)
+
+                await self.send(text_data=json.dumps(
+                    {
+                        "action": "move_confirmed",
+                        "fen": self.board.fen()
+                    }
+                ))
+
+                if self.board.is_game_over():
+                    await self._handle_game_over()
+                    return
+
+                result = await self.engine.play(self.board, chess.engine.Limit(time=0.5))
+                ai_move = result.move
+
+                if ai_move in self.board.legal_moves:
+                    self.board.push(ai_move)
+
+                    await self.send(text_data=json.dumps(
+                        {
+                            "action": "ai_move",
+                            "move": ai_move.uci(),
+                            "fen": self.board.fen()
+                        }
+                    ))
+
+    async def _handle_game_over(self):
+        await self.send(text_data=json.dumps({
+            "action": "game_ended",
+            "result": self.board.result()
+        }))

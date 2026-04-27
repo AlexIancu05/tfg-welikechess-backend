@@ -3,7 +3,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from users.api.permissions import IsOwnerOrReadOnly
-
 from users.api.serializers import *
 
 

@@ -2,9 +2,9 @@ import random
 from datetime import timedelta
 
 import chess
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
-from django.contrib.auth import get_user_model
 
 from games.models import Game
 from games.websockets.constants import WSErrorCodes

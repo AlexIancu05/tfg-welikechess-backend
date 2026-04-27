@@ -1,8 +1,9 @@
 import requests
 from django.core.cache import cache
+from django.db import transaction
 
 from users.models import User
-from django.db import transaction
+
 
 @transaction.atomic
 def create_user(email: str, username: str, password: str) -> User:

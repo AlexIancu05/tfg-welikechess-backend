@@ -1,7 +1,8 @@
-from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from rest_framework import serializers
 
 from games.models import Game
+
 
 class PlayerSimpleSerializer(serializers.ModelSerializer):
     class Meta:

@@ -3,6 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 
 from .models import User
 
+
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     # Esto se ve en el menu como tal, para poder hacer click
