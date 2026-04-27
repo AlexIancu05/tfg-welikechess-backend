@@ -4,6 +4,7 @@ from datetime import timedelta
 import chess
 from django.db import transaction
 from django.utils import timezone
+from django.contrib.auth import get_user_model
 
 from games.models import Game
 from games.websockets.constants import WSErrorCodes
@@ -185,7 +186,9 @@ class GameService:
                     "status": game.status,
                     "result": game.result,
                     "time_white": game.white_time_left,
-                    "time_black": game.black_time_left
+                    "time_black": game.black_time_left,
+                    "white_elo_change": game.white_elo_change,
+                    "black_elo_change": game.black_elo_change
                 }, None
 
             # Aplicar incremento
@@ -220,7 +223,9 @@ class GameService:
                 "status": game.status,
                 "result": game.result if game.status == "completed" else None,
                 "time_white": game.white_time_left,
-                "time_black": game.black_time_left
+                "time_black": game.black_time_left,
+                "white_elo_change": game.white_elo_change if game.status == "completed" else None,
+                "black_elo_change": game.black_elo_change if game.status == "completed" else None
             }, None
 
     @staticmethod
@@ -315,8 +320,9 @@ class EloService:
         if game.status != "completed" or not game.result:
             return
 
-        white_player = game.white_player
-        black_player = game.black_player
+        User = get_user_model()
+        white_player = User.objects.select_for_update().get(id=game.white_player.id)
+        black_player = User.objects.select_for_update().get(id=game.black_player.id)
         mode = game.mode
 
         white_elo = getattr(white_player, f"elo_{mode}", 1200)
