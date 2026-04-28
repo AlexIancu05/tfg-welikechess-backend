@@ -111,3 +111,24 @@ class Game(models.Model):
 
     def __str__(self):
         return f"{self.id} - {self.status}"
+
+class GameMessage(models.Model):
+    game = models.ForeignKey(
+        "Game",
+        on_delete=models.CASCADE,
+        related_name="messages",
+        null=False
+    )
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    text = models.TextField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["game", "created_at"]
+
+    def __str__(self):
+        return f"[{self.game.id}] {self.sender.username}: [{self.text[:20]}]"

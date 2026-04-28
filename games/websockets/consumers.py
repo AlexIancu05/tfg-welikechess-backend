@@ -8,7 +8,7 @@ from channels.generic.websocket import WebsocketConsumer, AsyncWebsocketConsumer
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
-from games.models import Game
+from games.models import Game, GameMessage
 from games.services import MatchmakingService, GameService
 from games.websockets.constants import WSErrorCodes
 
@@ -120,6 +120,7 @@ class GameConsumer(WebsocketConsumer):
         self.game_id = None
         self.room_group_name = None
         self.game = None
+        self.user = None
 
     def send_error(self, message: str, close_connection: bool = False, close_code: WSErrorCodes = WSErrorCodes.GENERIC_ERROR):
         """
@@ -159,14 +160,14 @@ class GameConsumer(WebsocketConsumer):
         }
 
     def connect(self):
-        user = self.scope["user"]
+        self.user = self.scope["user"]
         self.game_id = self.scope["url_route"]["kwargs"]["game_id"]
         self.room_group_name = f"game{self.game_id}"
 
         self.accept()
 
         # Control de seguridad del usuario, si no esta autenticado, se cierra el Websocket
-        if not user.is_authenticated:
+        if not self.user.is_authenticated:
             self.send_error(message="Usuario no autenticado", close_connection=True, close_code=WSErrorCodes.UNAUTHENTICATED)
             return
 
@@ -225,6 +226,8 @@ class GameConsumer(WebsocketConsumer):
             self.handle_offer_draw()
         elif action == "accept_draw":
             self.handle_accept_draw()
+        elif action == "chat_message":
+            self.handle_chat_message(data.get("message"))
         else:
             self.send_error(message=f"Acción desconocida: '{action}'", close_code=WSErrorCodes.GENERIC_ERROR)
 
@@ -232,7 +235,7 @@ class GameConsumer(WebsocketConsumer):
         """Procesa un movimiento en formato UCI. EJ: e2e4"""
         self.game.refresh_from_db()
 
-        success, result_data, error_code = GameService.process_move(self.game_id, self.scope["user"], move_uci)
+        success, result_data, error_code = GameService.process_move(self.game_id, self.user, move_uci)
 
         if not success:
             self.send_error(message=result_data, close_code=error_code)
@@ -261,7 +264,7 @@ class GameConsumer(WebsocketConsumer):
         }))
 
     def handle_resign(self):
-        success, data, error_code = GameService.resign_game(self.game_id, self.scope["user"])
+        success, data, error_code = GameService.resign_game(self.game_id, self.user)
         if success:
             self.broadcast_game_update(data)
         else:
@@ -274,13 +277,13 @@ class GameConsumer(WebsocketConsumer):
                 "type": "game_message",
                 "message": {
                     "action": "draw_offered",
-                    "sender": self.scope["user"].username
+                    "sender": self.user.username
                 }
             }
         )
 
     def handle_accept_draw(self):
-        success, data, error_code = GameService.accept_draw(self.game_id, self.scope["user"])
+        success, data, error_code = GameService.accept_draw(self.game_id, self.user)
         if success:
             self.broadcast_game_update(data)
         else:
@@ -297,6 +300,42 @@ class GameConsumer(WebsocketConsumer):
 
     def game_message(self, event):
         self.send(text_data=json.dumps(event["message"]))
+
+    def handle_chat_message(self, message_text):
+        """Procesa un mensaje de chat, lo guarda y lo difunde"""
+        if not message_text or not isinstance(message_text, str):
+            return
+
+        clean_text = message_text.strip()
+
+        if not clean_text:
+            return
+
+        message = GameMessage.objects.create(
+            game=self.game,
+            sender=self.user,
+            text=clean_text
+        )
+
+        if message:
+            async_to_sync(self.channel_layer.group_send)(
+                self.room_group_name,
+                {
+                    "type": "chat_message",
+                    "username": self.user.username,
+                    "message": clean_text
+                }
+            )
+
+    def chat_message(self, event):
+        """Envia el mensaje recibido al grupo del Websocket"""
+        self.send(text_data=json.dumps(
+            {
+                "type": "chat_message",
+                "username": event["username"],
+                "message": event["message"]
+            }
+        ))
 
 class AIGameConsumer(AsyncWebsocketConsumer):
     async def send_error(self, message: str, close_connection: bool = False, close_code: WSErrorCodes = WSErrorCodes.GENERIC_ERROR):
