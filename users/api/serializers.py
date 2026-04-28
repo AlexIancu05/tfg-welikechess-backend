@@ -1,6 +1,7 @@
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
+from games.services import GameService
 from users import services
 from users.models import User
 
@@ -32,8 +33,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserPublicSerializer(serializers.ModelSerializer):
     """
     Serializer para listar usuarios y ver perfiles ajenos (GET)
-    (UNFINISHED)
     """
+
+    friends = serializers.SlugRelatedField(
+        many=True,
+        read_only=True,
+        slug_field="username"
+    )
+
+    recent_games = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -44,14 +52,29 @@ class UserPublicSerializer(serializers.ModelSerializer):
             "elo_blitz",
             "elo_rapid",
             "elo_bullet",
-            "date_joined"
+            "date_joined",
+            "friends",
+            "recent_games"
         ]
-        # TODO: Añadir historial
+
+    def get_recent_games(self, user):
+        """
+        Obtiene las ultimas 10 partidas acabadas del usuario
+        """
+        return GameService.find_user_recent_games(user, limit=10)
 
 class UserDetailSerializer(serializers.ModelSerializer):
     """
     Serializer para ver su propia información de usuario
     """
+
+    friends = serializers.SlugRelatedField(
+        many=True,
+        read_only=True,
+        slug_field='username'
+    )
+
+    recent_games = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -64,7 +87,9 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "elo_rapid",
             "elo_bullet",
             "is_active",
-            "date_joined"
+            "date_joined",
+            "friends",
+            "recent_games"
         ]
 
         read_only_fields = [
@@ -76,3 +101,19 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "is_active",
             "date_joined"
         ]
+
+    def get_recent_games(self, user):
+        """
+        Obtiene las ultimas 10 partidas acabadas del usuario
+        """
+        return GameService.find_user_recent_games(user, limit=10)
+
+
+from users.models import FriendRequest
+class PendingFriendRequestSerializer(serializers.ModelSerializer):
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
+    sender_avatar = serializers.CharField(source='sender.avatar', read_only=True)
+
+    class Meta:
+        model = FriendRequest
+        fields = ['sender_username', 'sender_avatar', 'created_at']

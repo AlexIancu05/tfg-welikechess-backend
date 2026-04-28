@@ -4,6 +4,7 @@ from datetime import timedelta
 import chess
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from games.models import Game
@@ -281,6 +282,24 @@ class GameService:
                 "result": game.result,
                 "termination_reason": game.termination_reason
             }, None
+
+    @staticmethod
+    def find_user_recent_games(user, limit=10):
+        games = Game.objects.filter(
+            (Q(white_player=user) | Q(black_player=user)) & Q(status="completed")
+        ).order_by('-created_at')[:limit]
+
+        return [
+            {
+                "id": str(game.id),
+                "mode": game.mode,
+                "result": game.result,
+                "white": game.white_player.username if game.white_player else "Anónimo",
+                "black": game.black_player.username if game.black_player else "Anónimo",
+                "date": game.created_at
+            }
+            for game in games
+        ]
 
 class EloService:
 

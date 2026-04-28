@@ -1,8 +1,9 @@
 import requests
 from django.core.cache import cache
 from django.db import transaction
+from rest_framework import status
 
-from users.models import User
+from users.models import User, FriendRequest
 
 
 @transaction.atomic
@@ -71,3 +72,51 @@ def get_external_ranking(perf_type="blitz"):
     except Exception:
         print(f"Error sync Lichess: {Exception}")
         return []
+
+class FriendService:
+    @staticmethod
+    def send_friend_request(sender, receiver):
+        """
+        Procesa el envío de una petición de amistad con todas sus validaciones.
+        Devuelve: (success, detail_message, http_status)
+        """
+        if sender == receiver:
+            return False, "No puedes enviarte una solicitud de amistad a ti mismo.", status.HTTP_400_BAD_REQUEST
+
+        if sender.friends.filter(id=receiver.id).exists():
+            return False, "Ya sois amigos.", status.HTTP_400_BAD_REQUEST
+
+        if FriendRequest.objects.filter(sender=sender, receiver=receiver, is_active=True).exists():
+            return False, "Ya has enviado una solicitud a este usuario.", status.HTTP_400_BAD_REQUEST
+
+        if FriendRequest.objects.filter(sender=receiver, receiver=sender, is_active=True).exists():
+            return False, "Este usuario ya te ha enviado una solicitud. Ve a pendientes para aceptarla.", status.HTTP_400_BAD_REQUEST
+
+        # Si pasa todas las validaciones, creamos la petición
+        FriendRequest.objects.create(sender=sender, receiver=receiver)
+
+        return True, "Solicitud enviada correctamente.", status.HTTP_201_CREATED
+
+    @staticmethod
+    def respond_request(sender, receiver, action_type):
+        """
+        Procesa la respuesta (accept/reject) a una petición pendiente.
+        Devuelve: (success, detail_message, http_status)
+        """
+        friend_request = FriendRequest.objects.filter(sender=sender, receiver=receiver, is_active=True).first()
+
+        if not friend_request:
+            return False, "No hay ninguna solicitud pentiende de este usuario", status.HTTP_404_NOT_FOUND
+
+        if action_type == "accept":
+            friend_request.is_active = False
+            friend_request.save()
+
+            receiver.friends.add(sender)
+            return True, "Solicitud aceptada", status.HTTP_200_OK
+        elif action_type == "reject":
+            friend_request.is_active = False
+            friend_request.save()
+            return True, "Solicitud rechazada", status.HTTP_200_OK
+        else:
+            return False, "Acción inválida. Usa 'accept' o 'reject'.", status.HTTP_400_BAD_REQUEST

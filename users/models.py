@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 from django.db.models.functions import Lower
@@ -29,6 +30,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(auto_now_add=True)
     last_seen = models.DateTimeField(null=True, blank=True)
 
+    friends = models.ManyToManyField("self", blank=True, symmetrical=True)
+
     objects = CustomUserManager()
 
     USERNAME_FIELD = "email"
@@ -54,3 +57,24 @@ class User(AbstractBaseUser, PermissionsMixin):
         ]
     def __str__(self):
         return f"{self.username}"
+
+class FriendRequest(models.Model):
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="sent_friend_requests"
+    )
+    receiver = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="received_friend_requests"
+    )
+    is_active = models.BooleanField(default=True, help_text="False si fue aceptada o rechazada")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [["sender", "receiver"]]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.sender.username} -> {self.receiver.username} ({'Pendiente' if self.is_active else 'Resuelta'})"
