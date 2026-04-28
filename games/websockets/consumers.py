@@ -256,6 +256,8 @@ class GameConsumer(WebsocketConsumer):
             "result": event["result"],
             "time_white": event.get("time_white"),
             "time_black": event.get("time_black"),
+            "white_elo_change": event.get("white_elo_change"),
+            "black_elo_change": event.get("black_elo_change"),
         }))
 
     def handle_resign(self):
@@ -335,7 +337,7 @@ class AIGameConsumer(AsyncWebsocketConsumer):
 
         self.transport, self.engine = await chess.engine.popen_uci(self.engine_path)
 
-        skill_level = self.scope["url_route"]["kwargs"].get("skill_level", 5)
+        skill_level = int(self.scope["url_route"]["kwargs"].get("skill_level", 5))
         await self.engine.configure({"Skill Level": skill_level})
 
     async def disconnect(self, code):
@@ -355,19 +357,23 @@ class AIGameConsumer(AsyncWebsocketConsumer):
         action = data.get("action")
 
         if action == "move":
-            move_uci = data.get("move")
+            user_uci = data.get("move")
             try:
-                user_move = chess.Move.from_uci(move_uci)
+                user_move = chess.Move.from_uci(user_uci)
             except (ValueError, TypeError):
                 await self.send_error(message="Movimiento inválido", close_code=WSErrorCodes.INVALID_JSON)
                 return
 
             if user_move in self.board.legal_moves:
+                user_san_string = self.board.san(user_move)
+
                 self.board.push(user_move)
 
                 await self.send(text_data=json.dumps(
                     {
                         "action": "move_confirmed",
+                        "move": user_uci,
+                        "san": user_san_string,
                         "fen": self.board.fen()
                     }
                 ))
@@ -380,12 +386,15 @@ class AIGameConsumer(AsyncWebsocketConsumer):
                 ai_move = result.move
 
                 if ai_move in self.board.legal_moves:
+                    ai_san_string = self.board.san(ai_move)
+
                     self.board.push(ai_move)
 
                     await self.send(text_data=json.dumps(
                         {
                             "action": "ai_move",
                             "move": ai_move.uci(),
+                            "san": ai_san_string,
                             "fen": self.board.fen()
                         }
                     ))
