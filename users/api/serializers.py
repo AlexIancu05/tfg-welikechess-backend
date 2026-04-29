@@ -10,9 +10,11 @@ class UserSerializerComplete(serializers.ModelSerializer):
     """
     SERIALIZADOR SOLO PARA TESTING
     """
+
     class Meta:
         model = User
         fields = "__all__"
+
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """
@@ -29,6 +31,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return services.create_user(**validated_data)
+
 
 class UserPublicSerializer(serializers.ModelSerializer):
     """
@@ -62,6 +65,7 @@ class UserPublicSerializer(serializers.ModelSerializer):
         Obtiene las ultimas 10 partidas acabadas del usuario
         """
         return GameService.find_user_recent_games(user, limit=10)
+
 
 class UserDetailSerializer(serializers.ModelSerializer):
     """
@@ -110,6 +114,8 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
 
 from users.models import FriendRequest
+
+
 class PendingFriendRequestSerializer(serializers.ModelSerializer):
     sender_username = serializers.CharField(source='sender.username', read_only=True)
     sender_avatar = serializers.CharField(source='sender.avatar', read_only=True)

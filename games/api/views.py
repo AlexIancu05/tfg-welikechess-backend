@@ -8,7 +8,6 @@ from games.models import Game
 
 
 class GameViewSet(viewsets.ReadOnlyModelViewSet):
-
     permission_classes = [permissions.IsAuthenticated]
 
     lookup_field = "id"

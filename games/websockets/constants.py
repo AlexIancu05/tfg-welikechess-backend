@@ -13,5 +13,6 @@ class WSErrorCodes(IntEnum):
     WRONG_TURN = 4006
     ILLEGAL_MOVE = 4007
 
+
 class StockfishErrorCodes(IntEnum):
     GENERIC_ERROR = 4000

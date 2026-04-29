@@ -60,12 +60,12 @@ class Game(models.Model):
         related_name='games_won'
     )
 
-    #Partida
+    # Partida
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="waiting")
     mode = models.CharField(max_length=10, choices=MODE_CHOICES, default='blitz')
     initial_time = models.PositiveIntegerField(default=600)
     increment = models.PositiveIntegerField(default=0)
-    #Ranked o Casual
+    # Ranked o Casual
     ranked = models.BooleanField(default=True)
 
     # Relojes de la partida (segundos)
@@ -73,10 +73,10 @@ class Game(models.Model):
     black_time_left = models.FloatField(null=True, blank=True)
     last_move_at = models.DateTimeField(null=True, blank=True)
 
-    #Estado del tablero
+    # Estado del tablero
     current_fen = models.CharField(max_length=120, default=chess.STARTING_FEN)
 
-    #Historial de movimientos
+    # Historial de movimientos
     pgn = models.TextField(blank=True, default="")
 
     white_elo_change = models.IntegerField(default=0)
@@ -111,6 +111,7 @@ class Game(models.Model):
 
     def __str__(self):
         return f"{self.id} - {self.status}"
+
 
 class GameMessage(models.Model):
     game = models.ForeignKey(

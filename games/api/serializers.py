@@ -16,6 +16,7 @@ class PlayerSimpleSerializer(serializers.ModelSerializer):
             "elo_classical"
         ]
 
+
 class GameListSerializer(serializers.ModelSerializer):
     white_username = serializers.CharField(source="white_player.username", read_only=True)
     black_username = serializers.CharField(source="black_player.username", read_only=True)
@@ -33,6 +34,7 @@ class GameListSerializer(serializers.ModelSerializer):
             "black_username",
             "winner_username"
         ]
+
 
 class GameDetailSerializer(serializers.ModelSerializer):
     white_player = PlayerSimpleSerializer(read_only=True)
@@ -66,6 +68,7 @@ class GameDetailSerializer(serializers.ModelSerializer):
         if obj.finished_at:
             return (obj.finished_at - obj.created_at).total_seconds()
         return None
+
 
 class GameTotalSerializer(serializers.ModelSerializer):
     class Meta:

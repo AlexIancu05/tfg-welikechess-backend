@@ -42,9 +42,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name = "usuario"
         verbose_name_plural = "usuarios"
         indexes = [
-            #Busqueda de partida mas rapida
+            # Busqueda de partida mas rapida
             models.Index(fields=['is_active']),
-            #Ranking
+            # Ranking
             models.Index(fields=['elo_blitz']),
             models.Index(fields=['elo_rapid']),
             models.Index(fields=['elo_bullet']),
@@ -55,8 +55,10 @@ class User(AbstractBaseUser, PermissionsMixin):
                 name="username_case_insensitive_unique"
             )
         ]
+
     def __str__(self):
         return f"{self.username}"
+
 
 class FriendRequest(models.Model):
     sender = models.ForeignKey(

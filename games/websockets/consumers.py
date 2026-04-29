@@ -18,7 +18,8 @@ class MatchmakingConsumer(WebsocketConsumer):
         super().__init__(*args, **kwargs)
         self.ticket_group_name = None
 
-    def send_error(self, message: str, close_connection: bool = False, close_code: WSErrorCodes = WSErrorCodes.GENERIC_ERROR):
+    def send_error(self, message: str, close_connection: bool = False,
+                   close_code: WSErrorCodes = WSErrorCodes.GENERIC_ERROR):
         """
         Envía mensajes de error al front.
         Si close_connection es True, cierra el Websocket
@@ -52,7 +53,7 @@ class MatchmakingConsumer(WebsocketConsumer):
             game_id_str = self.ticket_group_name.replace("ticket_", "")
             Game.objects.filter(id=game_id_str, status="waiting").delete()
 
-    def receive(self, text_data = None, bytes_data = None):
+    def receive(self, text_data=None, bytes_data=None):
         if text_data is None:
             return
 
@@ -114,6 +115,7 @@ class MatchmakingConsumer(WebsocketConsumer):
             }
         ))
 
+
 class GameConsumer(WebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -122,7 +124,8 @@ class GameConsumer(WebsocketConsumer):
         self.game = None
         self.user = None
 
-    def send_error(self, message: str, close_connection: bool = False, close_code: WSErrorCodes = WSErrorCodes.GENERIC_ERROR):
+    def send_error(self, message: str, close_connection: bool = False,
+                   close_code: WSErrorCodes = WSErrorCodes.GENERIC_ERROR):
         """
         Envía mensajes de error al front.
         Si close_connection es True, cierra el Websocket
@@ -168,14 +171,16 @@ class GameConsumer(WebsocketConsumer):
 
         # Control de seguridad del usuario, si no esta autenticado, se cierra el Websocket
         if not self.user.is_authenticated:
-            self.send_error(message="Usuario no autenticado", close_connection=True, close_code=WSErrorCodes.UNAUTHENTICATED)
+            self.send_error(message="Usuario no autenticado", close_connection=True,
+                            close_code=WSErrorCodes.UNAUTHENTICATED)
             return
 
         # Cargar partida
         try:
             self.game = Game.objects.select_related("white_player", "black_player").get(id=self.game_id)
         except ObjectDoesNotExist:
-            self.send_error(message="Partida no encontrada", close_connection=True, close_code=WSErrorCodes.GAME_NOT_FOUND)
+            self.send_error(message="Partida no encontrada", close_connection=True,
+                            close_code=WSErrorCodes.GAME_NOT_FOUND)
             return
 
         async_to_sync(self.channel_layer.group_add)(
@@ -206,7 +211,7 @@ class GameConsumer(WebsocketConsumer):
                 self.channel_name
             )
 
-    def receive(self, text_data = None, bytes_data = None):
+    def receive(self, text_data=None, bytes_data=None):
         if text_data is None:
             return
 
@@ -337,8 +342,10 @@ class GameConsumer(WebsocketConsumer):
             }
         ))
 
+
 class AIGameConsumer(AsyncWebsocketConsumer):
-    async def send_error(self, message: str, close_connection: bool = False, close_code: WSErrorCodes = WSErrorCodes.GENERIC_ERROR):
+    async def send_error(self, message: str, close_connection: bool = False,
+                         close_code: WSErrorCodes = WSErrorCodes.GENERIC_ERROR):
         """
         Envía mensajes de error al front.
         Si close_connection es True, cierra el Websocket
@@ -383,7 +390,7 @@ class AIGameConsumer(AsyncWebsocketConsumer):
         if self.engine is not None:
             await self.engine.quit()
 
-    async def receive(self, text_data = None, bytes_data = None):
+    async def receive(self, text_data=None, bytes_data=None):
         if text_data is None:
             return
 

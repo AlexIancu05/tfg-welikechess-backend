@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("games", "0003_remove_game_games_game_status_dab637_idx_and_more"),
     ]

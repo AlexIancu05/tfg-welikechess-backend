@@ -15,10 +15,9 @@ ALLOWED_HOSTS = [
     "localhost"
 ]
 
-
 # Application definition
 INSTALLED_APPS = [
-    "daphne", # Tiene que ir el primero
+    "daphne",  # Tiene que ir el primero
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -66,7 +65,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = "config.asgi.application"
 
-
 # Database
 DATABASES = {
     "default": {
@@ -104,13 +102,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 LANGUAGE_CODE = 'es-es'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'

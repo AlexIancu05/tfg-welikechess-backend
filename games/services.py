@@ -12,7 +12,6 @@ from games.websockets.constants import WSErrorCodes
 
 
 class MatchmakingService:
-
     DEFAULT_MAX_GAME_LIFETIME = 5
 
     @staticmethod
@@ -93,6 +92,7 @@ class MatchmakingService:
                 return available_game, "match_found"
 
         return MatchmakingService._create_new_game(user, game_mode, initial_time, increment), "waiting"
+
 
 class GameService:
     @staticmethod
@@ -301,8 +301,8 @@ class GameService:
             for game in games
         ]
 
-class EloService:
 
+class EloService:
     K_FACTOR = 32
 
     @staticmethod
@@ -313,8 +313,8 @@ class EloService:
         Devuelve: (nuevo_elo_blancas, nuevo_elo_negras)
         """
         # Formula para probabilidad matematica de victoria
-        expected_white = 1/(1 + 10 ** ((black_elo - white_elo) / 400))
-        expected_black = 1/(1 + 10 ** ((white_elo - black_elo) / 400))
+        expected_white = 1 / (1 + 10 ** ((black_elo - white_elo) / 400))
+        expected_black = 1 / (1 + 10 ** ((white_elo - black_elo) / 400))
 
         # Asignar puntuacion segun resultado
         if match_result == "1-0":

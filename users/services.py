@@ -25,6 +25,7 @@ def create_user(email: str, username: str, password: str) -> User:
 
     return user
 
+
 def get_external_ranking(perf_type="blitz"):
     """
     Obtiene el Top 50 de Lichess y asigna avatares locales.
@@ -73,6 +74,7 @@ def get_external_ranking(perf_type="blitz"):
         print(f"Error sync Lichess: {Exception}")
         return []
 
+
 class FriendService:
     @staticmethod
     def send_friend_request(sender, receiver):
@@ -120,3 +122,15 @@ class FriendService:
             return True, "Solicitud rechazada", status.HTTP_200_OK
         else:
             return False, "Acción inválida. Usa 'accept' o 'reject'.", status.HTTP_400_BAD_REQUEST
+
+    @staticmethod
+    def remove_friend(user1: User, user2: User):
+        if user1 == user2:
+            return False, "No puedes eliminarte a ti mismo de tu lista de amigos.", status.HTTP_400_BAD_REQUEST
+
+        if not user1.friends.filter(id=user2.id).exists():
+            return False, "Este usuario no está en tu lista de amigos.", status.HTTP_400_BAD_REQUEST
+
+        user1.friends.remove(user2)
+
+        return True, "Amigo eliminado correctamente", status.HTTP_200_OK

@@ -77,7 +77,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
-    def send_friend_request(self, request, username=None):
+    def send_friend_request(self, request, *args, **kwargs):
         """
         Endpoint: api/users/<username>/send_friend_request/
         Envía una solicitud de amistad al usuario especificado
@@ -90,7 +90,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({"detail": message}, status=status_code)
 
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
-    def respond_friend_request(self, request, username=None):
+    def respond_friend_request(self, request, *args, **kwargs):
         """
         Endpoint: POST api/users/<username>/respond_request/
         Body: {"action": "accept" | "reject"}
@@ -118,3 +118,17 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = PendingFriendRequestSerializer(requests, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
+    def remove_friend(self, request, *args, **kwargs):
+        """
+        Endpoint: POST api/users/<username>/remove_friend/
+        Elimina al usuario especificado de tu lista de amigos.
+        """
+
+        friend_to_remove = self.get_object()
+        user = request.user
+
+        _success, message, status_code = FriendService.remove_friend(user1=user, user2=friend_to_remove)
+
+        return Response({"detail": message}, status=status_code)
