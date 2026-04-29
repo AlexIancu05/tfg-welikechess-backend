@@ -12,5 +12,6 @@ urlpatterns = [
     path("api/auth/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/users/", include("users.api.urls")),
-    path("api/games/", include("games.api.urls"))
+    path("api/games/", include("games.api.urls")),
+    path("api/chat/", include("chat.api.urls"))
 ]

@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "users",
     "games",
+    "chat",
 ]
 
 MIDDLEWARE = [
