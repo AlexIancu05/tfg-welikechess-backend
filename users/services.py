@@ -104,8 +104,12 @@ class FriendService:
         if FriendRequest.objects.filter(sender=receiver, receiver=sender, is_active=True).exists():
             return False, "Este usuario ya te ha enviado una solicitud. Ve a pendientes para aceptarla.", status.HTTP_400_BAD_REQUEST
 
-        # Si pasa todas las validaciones, creamos la petición
-        FriendRequest.objects.create(sender=sender, receiver=receiver)
+        existing_request = FriendRequest.objects.filter(sender=sender, receiver=receiver).first()
+        if existing_request:
+            existing_request.is_active = True
+            existing_request.save()
+        else:
+            FriendRequest.objects.create(sender=sender, receiver=receiver)
 
         return True, "Solicitud enviada correctamente.", status.HTTP_201_CREATED
 
