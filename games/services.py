@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from games.models import Game
-from games.websockets.constants import WSErrorCodes
+from core.constants import WSErrorCodes
 
 
 class MatchmakingService:

@@ -10,7 +10,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from games.models import Game, GameMessage
 from games.services import MatchmakingService, GameService
-from games.websockets.constants import WSErrorCodes
+from core.constants import WSErrorCodes
 
 
 class MatchmakingConsumer(WebsocketConsumer):
