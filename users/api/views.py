@@ -2,6 +2,7 @@ from rest_framework import permissions, viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from games.api.serializers import PlayerSimpleSerializer
 from users.api.permissions import IsOwnerOrReadOnly
 from users.api.serializers import *
 from users.models import FriendRequest
@@ -63,6 +64,22 @@ class UserViewSet(viewsets.ModelViewSet):
         data = get_external_ranking(perf_type)
 
         return Response(data)
+
+    @action(detail=False, methods=["get"], url_path="leaderboard")
+    def leaderboard(self, request):
+        """
+        Obtiene el Top X de jugadores.
+        Endpoint: GET /api/users/leaderboard/?mode=bullet&limit=5
+        """
+
+        mode = request.query_params.get("mode", "blitz")
+        limit = request.query_params.get("limit", 10)
+
+        top_players = UserService.get_leaderboard(mode=mode, limit=limit)
+
+        serializer = PlayerSimpleSerializer(top_players, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get", "patch"], permission_classes=[permissions.IsAuthenticated])
     def me(self, request):

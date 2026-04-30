@@ -360,7 +360,6 @@ class GameService:
 
         return False, "Tipo de reclamación inválida", WSErrorCodes.GENERIC_ERROR
 
-
 class EloService:
     K_FACTOR = 32
 
@@ -375,7 +374,6 @@ class EloService:
         expected_white = 1 / (1 + 10 ** ((black_elo - white_elo) / 400))
         expected_black = 1 / (1 + 10 ** ((white_elo - black_elo) / 400))
 
-        # Asignar puntuacion segun resultado
         if match_result == "1-0":
             score_white, score_black = 1, 0
         elif match_result == "0-1":

@@ -87,6 +87,26 @@ class UserService:
         except User.DoesNotExist:
             return None
 
+    @staticmethod
+    def get_leaderboard(mode="blitz", limit=10):
+        """
+        Devuelve el top X de jugadores para un modo específico.
+        """
+        valid_modes = ["blitz", "rapid", "bullet"]
+        if mode not in valid_modes:
+            mode = "blitz"
+
+        try:
+            limit = int(limit)
+            if limit < 1 or limit > 100:
+                limit = 10
+        except ValueError:
+            limit = 10
+
+        elo_field = f"elo_{mode}"
+
+        return User.objects.order_by(f"-{elo_field}")[:limit]
+
 
 class FriendService:
     @staticmethod
