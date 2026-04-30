@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("users", "0004_remove_user_users_user_elo_cla_885866_idx_and_more"),
     ]

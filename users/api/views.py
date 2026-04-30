@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from users.api.permissions import IsOwnerOrReadOnly
 from users.api.serializers import *
 from users.models import FriendRequest
-from users.services import FriendService
+from users.services import get_external_ranking, FriendService
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -60,7 +60,7 @@ class UserViewSet(viewsets.ModelViewSet):
         Lee el tipo de ranking desde la URL y lo solicita al servicio.
         """
         perf_type = request.query_params.get("type", "blitz")
-        data = services.get_external_ranking(perf_type)
+        data = get_external_ranking(perf_type)
 
         return Response(data)
 

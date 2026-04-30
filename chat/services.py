@@ -40,4 +40,3 @@ class ChatService:
     @staticmethod
     def find_user_chats(user):
         return PrivateChatRoom.objects.filter(Q(user1=user) | Q(user2=user))
-

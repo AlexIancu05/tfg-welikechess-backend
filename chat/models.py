@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 
+
 class PrivateChatRoom(models.Model):
     user1 = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -30,6 +31,7 @@ class PrivateChatRoom(models.Model):
         u1 = self.user1.username if self.user1 else "Cuenta Eliminada"
         u2 = self.user2.username if self.user2 else "Cuenta Eliminada"
         return f"Chat: {u1} & {u2}"
+
 
 class PrivateMessage(models.Model):
     room = models.ForeignKey(

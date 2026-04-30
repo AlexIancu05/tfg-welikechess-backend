@@ -1,11 +1,12 @@
+from rest_framework import status
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
-from rest_framework import status
 from rest_framework.response import Response
 
 from chat.api.serializers import PrivateChatRoomSerializer, PrivateMessageSerializer
 from chat.services import ChatService
 from users.services import UserService
+
 
 class ChatRoomViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PrivateChatRoomSerializer

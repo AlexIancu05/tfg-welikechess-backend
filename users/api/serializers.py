@@ -2,8 +2,8 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
 from games.services import GameService
-from users.services import UserService
 from users.models import User
+from users.services import UserService
 
 
 class UserSerializerComplete(serializers.ModelSerializer):
@@ -31,6 +31,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return UserService.create_user(**validated_data)
+
 
 class UserPublicSerializer(serializers.ModelSerializer):
     """

@@ -13,7 +13,6 @@ class PlayerSimpleSerializer(serializers.ModelSerializer):
             "elo_blitz",
             "elo_rapid",
             "elo_bullet",
-            "elo_classical"
         ]
 
 

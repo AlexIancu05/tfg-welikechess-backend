@@ -6,10 +6,9 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
-from twisted.internet.iocpreactor.reactor import MAX_TIMEOUT
 
-from games.models import Game
 from core.constants import WSErrorCodes
+from games.models import Game
 
 
 class MatchmakingService:
@@ -360,6 +359,7 @@ class GameService:
             return False, "El rival aún tiene tiempo", WSErrorCodes.GENERIC_ERROR
 
         return False, "Tipo de reclamación inválida", WSErrorCodes.GENERIC_ERROR
+
 
 class EloService:
     K_FACTOR = 32

@@ -16,7 +16,8 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
         self.room_id = None
         self.room_group_name = None
 
-    async def send_error(self, message: str, close_connection: bool = False, close_code: WSErrorCodes = WSErrorCodes.GENERIC_ERROR):
+    async def send_error(self, message: str, close_connection: bool = False,
+                         close_code: WSErrorCodes = WSErrorCodes.GENERIC_ERROR):
         """
         Envía mensajes de error al front.
         Si close_connection es True, cierra el Websocket
@@ -61,7 +62,7 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
                 self.channel_name
             )
 
-    async def receive(self, text_data = None, bytes_data = None):
+    async def receive(self, text_data=None, bytes_data=None):
         """
         Recibe el mensaje del Frontend
         *Se asume que el mensaje ya esta cifrado

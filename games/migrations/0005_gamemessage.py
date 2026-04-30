@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("games", "0004_game_black_time_left_game_white_time_left_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

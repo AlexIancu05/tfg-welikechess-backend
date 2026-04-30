@@ -118,6 +118,7 @@ class Game(models.Model):
         b_name = self.black_player.username if self.black_player else "Eliminado"
         return f"{self.id[:8]} - {w_name} vs {b_name} ({self.status})"
 
+
 class GameMessage(models.Model):
     game = models.ForeignKey(
         "Game",

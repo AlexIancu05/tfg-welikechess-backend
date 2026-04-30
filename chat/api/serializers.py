@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from chat.models import PrivateChatRoom, PrivateMessage
 
 
@@ -8,6 +9,7 @@ class PrivateMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = PrivateMessage
         fields = ["id", "sender_username", "text", "is_read", "created_at"]
+
 
 class PrivateChatRoomSerializer(serializers.ModelSerializer):
     other_user = serializers.SerializerMethodField()

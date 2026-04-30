@@ -1,4 +1,5 @@
 from django.urls import re_path
+
 from chat.websockets import consumers
 
 # noinspection PyTypeChecker

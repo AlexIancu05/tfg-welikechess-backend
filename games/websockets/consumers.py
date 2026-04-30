@@ -9,9 +9,9 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
+from core.constants import WSErrorCodes
 from games.models import Game, GameMessage
 from games.services import MatchmakingService, GameService
-from core.constants import WSErrorCodes
 
 
 class MatchmakingConsumer(WebsocketConsumer):
@@ -397,7 +397,6 @@ class GameConsumer(WebsocketConsumer):
             return
 
         self.broadcast_game_update(result_data)
-
 
 
 class AIGameConsumer(AsyncWebsocketConsumer):

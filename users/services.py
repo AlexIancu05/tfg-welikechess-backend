@@ -5,11 +5,12 @@ from rest_framework import status
 
 from users.models import User, FriendRequest
 
+
 def get_external_ranking(perf_type="blitz"):
     """
     Obtiene el Top 50 de Lichess y asigna avatares locales.
     """
-    valid_types = ["bullet", "blitz", "rapid", "classical"]
+    valid_types = ["bullet", "blitz", "rapid"]
     if perf_type not in valid_types:
         perf_type = "blitz"
 
@@ -53,6 +54,7 @@ def get_external_ranking(perf_type="blitz"):
         print(f"Error sync Lichess: {Exception}")
         return []
 
+
 class UserService:
     @staticmethod
     @transaction.atomic
@@ -84,6 +86,7 @@ class UserService:
             return User.objects.get(username=username)
         except User.DoesNotExist:
             return None
+
 
 class FriendService:
     @staticmethod
