@@ -20,11 +20,11 @@ class GameViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
     def get_serializer_class(self):
-        if self.action == "retrieve":
+        if self.action in ["retrieve", "my_games"]:
             return GameDetailSerializer
         return GameListSerializer
 
-    @action(detail=False, methods=["get"], url_path="my-history")
+    @action(detail=False, methods=["get"], url_path="my-games")
     def my_games(self, request):
         """
         Devuelve el historial del usuario que hace la peticion
