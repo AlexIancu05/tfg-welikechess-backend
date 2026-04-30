@@ -3,6 +3,7 @@ import os
 from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
 
+import chat.websockets.routing
 import games.websockets.routing
 from games.websockets.middleware import JWTAuthMiddleware
 
@@ -15,7 +16,8 @@ application = ProtocolTypeRouter(
         "http": DJANGO_ASGI_APP,
         "websocket": JWTAuthMiddleware(
             URLRouter(
-                games.websockets.routing.websocket_urlpatterns
+                games.websockets.routing.websocket_urlpatterns +
+                chat.websockets.routing.websocket_urlpatterns
             )
         )
     }
