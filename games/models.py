@@ -73,6 +73,10 @@ class Game(models.Model):
     black_time_left = models.FloatField(null=True, blank=True)
     last_move_at = models.DateTimeField(null=True, blank=True)
 
+    # Desconexiones
+    white_disconnected_at = models.DateTimeField(null=True, blank=True)
+    black_disconnected_at = models.DateTimeField(null=True, blank=True)
+
     # Estado del tablero
     current_fen = models.CharField(max_length=120, default=chess.STARTING_FEN)
 
@@ -110,8 +114,9 @@ class Game(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.id} - {self.status}"
-
+        w_name = self.white_player.username if self.white_player else "Eliminado"
+        b_name = self.black_player.username if self.black_player else "Eliminado"
+        return f"{self.id[:8]} - {w_name} vs {b_name} ({self.status})"
 
 class GameMessage(models.Model):
     game = models.ForeignKey(
@@ -123,7 +128,8 @@ class GameMessage(models.Model):
     sender = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        null=True
+        null=True,
+        blank=True,
     )
     text = models.TextField(max_length=500)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -132,4 +138,5 @@ class GameMessage(models.Model):
         ordering = ["game", "created_at"]
 
     def __str__(self):
-        return f"[{self.game.id}] {self.sender.username}: [{self.text[:20]}]"
+        sender_name = self.sender.username if self.sender else "Sistema/Eliminado"
+        return f"[{self.game.id}] {sender_name}: [{self.text[:20]}]"

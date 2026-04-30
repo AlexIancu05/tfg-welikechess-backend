@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+from twisted.internet.iocpreactor.reactor import MAX_TIMEOUT
 
 from games.models import Game
 from core.constants import WSErrorCodes
@@ -301,6 +302,64 @@ class GameService:
             for game in games
         ]
 
+    @staticmethod
+    def claim_victory(game_id, user, claim_type, max_seconds=60):
+        game = Game.objects.get(id=game_id)
+        if game.status != "in_progress":
+            return False, "La partida ya ha terminado", WSErrorCodes.GENERIC_ERROR
+
+        now = timezone.now()
+        is_white = (user == game.white_player)
+
+        if claim_type == "abandonment":
+            opponent_disconnect_time = game.black_disconnected_at if is_white else game.white_disconnected_at
+
+            if not opponent_disconnect_time:
+                return False, "El rival no está desconectado", WSErrorCodes.GENERIC_ERROR
+
+            time_offline = (now - opponent_disconnect_time).total_seconds()
+            if time_offline >= max_seconds:
+                result = "1-0" if is_white else "0-1"
+                winner = game.white_player if is_white else game.black_player
+
+                GameService.end_game(game=game, match_result=result, winner=winner, reason="disconnected")
+
+                return True, {
+                    "action": "game_over",
+                    "result": game.result,
+                    "reason": "Abandono por desconexión"
+                }, 200
+            else:
+                return False, "Aún no han pasado 60 segundos", WSErrorCodes.GENERIC_ERROR
+
+        elif claim_type == "timeout":
+            is_white_turn = game.current_fen.split(" ")[1] == "w"
+
+            if is_white and not is_white_turn:
+                time_spent = (now - game.last_move_at).total_seconds()
+                real_time_left = game.black_time_left - time_spent
+                if real_time_left <= 0:
+                    GameService.end_game(game=game, match_result="1-0", winner=game.white_player, reason="timeout")
+                    return True, {
+                        "action": "game_over",
+                        "result": "1-0",
+                        "reason": "Tiempo agotado"
+                    }, 200
+
+            elif not is_white and is_white_turn:
+                time_spent = (now - game.last_move_at).total_seconds()
+                real_time_left = game.white_time_left - time_spent
+                if real_time_left <= 0:
+                    GameService.end_game(game=game, match_result="0-1", winner=game.black_player, reason="timeout")
+                    return True, {
+                        "action": "game_over",
+                        "result": "0-1",
+                        "reason": "Tiempo agotado"
+                    }, 200
+
+            return False, "El rival aún tiene tiempo", WSErrorCodes.GENERIC_ERROR
+
+        return False, "Tipo de reclamación inválida", WSErrorCodes.GENERIC_ERROR
 
 class EloService:
     K_FACTOR = 32

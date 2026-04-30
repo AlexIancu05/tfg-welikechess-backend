@@ -7,6 +7,7 @@ from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer, AsyncWebsocketConsumer
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
 
 from games.models import Game, GameMessage
 from games.services import MatchmakingService, GameService
@@ -189,6 +190,22 @@ class GameConsumer(WebsocketConsumer):
         )
 
         color = self._get_player_color()
+        if color == "w":
+            self.game.white_disconnected_at = None
+        elif color == "b":
+            self.game.black_disconnected_at = None
+        self.game.save(update_fields=['white_disconnected_at', 'black_disconnected_at'])
+
+        async_to_sync(self.channel_layer.group_send)(
+            self.room_group_name,
+            {
+                "type": "game_message",
+                "message": {
+                    "action": "player_reconnected",
+                    "color": color
+                }
+            }
+        )
 
         self.send(text_data=json.dumps({
             "type": "game_state",
@@ -205,11 +222,34 @@ class GameConsumer(WebsocketConsumer):
         }))
 
     def disconnect(self, code):
-        if self.room_group_name:
-            async_to_sync(self.channel_layer.group_discard)(
-                self.room_group_name,
-                self.channel_name
-            )
+        if not (self.room_group_name and self.game):
+            return
+
+        color = self._get_player_color()
+        now = timezone.now()
+
+        if color == "w":
+            self.game.white_disconnected_at = now
+        elif color == "b":
+            self.game.black_disconnected_at = now
+        self.game.save(update_fields=['white_disconnected_at', 'black_disconnected_at'])
+
+        async_to_sync(self.channel_layer.group_send)(
+            self.room_group_name,
+            {
+                "type": "game_message",
+                "message": {
+                    "action": "player_disconnected",
+                    "color": color,
+                    "timestamp": now.isoformat()
+                }
+            }
+        )
+
+        async_to_sync(self.channel_layer.group_discard)(
+            self.room_group_name,
+            self.channel_name
+        )
 
     def receive(self, text_data=None, bytes_data=None):
         if text_data is None:
@@ -233,6 +273,8 @@ class GameConsumer(WebsocketConsumer):
             self.handle_accept_draw()
         elif action == "chat_message":
             self.handle_chat_message(data.get("message"))
+        elif action == "claim_victory":
+            self.handle_claim_victory(data.get("claim_type"))
         else:
             self.send_error(message=f"Acción desconocida: '{action}'", close_code=WSErrorCodes.GENERIC_ERROR)
 
@@ -341,6 +383,21 @@ class GameConsumer(WebsocketConsumer):
                 "message": event["message"]
             }
         ))
+
+    def handle_claim_victory(self, claim_type):
+        """
+        Puede ser "timeout" o "abandonment" (60 segundos desconectado)
+        """
+        self.game.refresh_from_db()
+
+        success, result_data, error_code = GameService.claim_victory(self.game_id, self.user, claim_type)
+
+        if not success:
+            self.send_error(message=result_data, close_code=error_code)
+            return
+
+        self.broadcast_game_update(result_data)
+
 
 
 class AIGameConsumer(AsyncWebsocketConsumer):
