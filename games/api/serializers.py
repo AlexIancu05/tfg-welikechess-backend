@@ -19,8 +19,8 @@ class PlayerSimpleSerializer(serializers.ModelSerializer):
 class GameListSerializer(serializers.ModelSerializer):
     white_username = serializers.CharField(source="white_player.username", read_only=True)
     black_username = serializers.CharField(source="black_player.username", read_only=True)
-    winner_username = serializers.CharField(source="winner.username", read_only=True)
-
+    winner_username = serializers.CharField(source="winner.username", read_only=True, allow_null=True)
+    
     class Meta:
         model = Game
         fields = [

@@ -109,7 +109,7 @@ class GameService:
 
         termination_map = {
             chess.Termination.CHECKMATE: "checkmate",
-            chess.Termination.STALEMATE: "draw",  # Rey ahogado
+            chess.Termination.STALEMATE: "draw",
             chess.Termination.INSUFFICIENT_MATERIAL: "draw",
             chess.Termination.FIFTY_MOVES: "draw",
             chess.Termination.THREEFOLD_REPETITION: "draw",
@@ -256,7 +256,9 @@ class GameService:
                 "fen": game.current_fen,
                 "status": game.status,
                 "result": game.result,
-                "termination_reason": game.termination_reason
+                "termination_reason": game.termination_reason,
+                "white_elo_change": game.white_elo_change,
+                "black_elo_change": game.black_elo_change,
             }, None
 
     @staticmethod
@@ -280,7 +282,9 @@ class GameService:
                 "fen": game.current_fen,
                 "status": game.status,
                 "result": game.result,
-                "termination_reason": game.termination_reason
+                "termination_reason": game.termination_reason,
+                "white_elo_change": game.white_elo_change,
+                "black_elo_change": game.black_elo_change,
             }, None
 
     @staticmethod
@@ -323,42 +327,62 @@ class GameService:
 
                 GameService.end_game(game=game, match_result=result, winner=winner, reason="disconnected")
 
+                # Recargar para obtener los elo_change calculados por EloService
+                game.refresh_from_db()
+
                 return True, {
-                    "action": "game_over",
+                    "action": "game_ended",
                     "result": game.result,
-                    "reason": "Abandono por desconexión"
-                }, 200
+                    "termination_reason": game.termination_reason,
+                    "white_elo_change": game.white_elo_change,
+                    "black_elo_change": game.black_elo_change,
+                }, None
             else:
                 return False, "Aún no han pasado 60 segundos", WSErrorCodes.GENERIC_ERROR
 
         elif claim_type == "timeout":
             is_white_turn = game.current_fen.split(" ")[1] == "w"
 
+            # El jugador blanco reclama cuando es turno de negras y se les acabó el tiempo
             if is_white and not is_white_turn:
                 time_spent = (now - game.last_move_at).total_seconds()
                 real_time_left = game.black_time_left - time_spent
                 if real_time_left <= 0:
                     GameService.end_game(game=game, match_result="1-0", winner=game.white_player, reason="timeout")
-                    return True, {
-                        "action": "game_over",
-                        "result": "1-0",
-                        "reason": "Tiempo agotado"
-                    }, 200
 
+                    # Recargar para obtener los elo_change calculados por EloService
+                    game.refresh_from_db()
+
+                    return True, {
+                        "action": "game_ended",
+                        "result": game.result,
+                        "termination_reason": game.termination_reason,
+                        "white_elo_change": game.white_elo_change,
+                        "black_elo_change": game.black_elo_change,
+                    }, None
+
+            # El jugador negro reclama cuando es turno de blancas y se les acabó el tiempo
             elif not is_white and is_white_turn:
                 time_spent = (now - game.last_move_at).total_seconds()
                 real_time_left = game.white_time_left - time_spent
                 if real_time_left <= 0:
                     GameService.end_game(game=game, match_result="0-1", winner=game.black_player, reason="timeout")
+
+                    # Recargar para obtener los elo_change calculados por EloService
+                    game.refresh_from_db()
+
                     return True, {
-                        "action": "game_over",
-                        "result": "0-1",
-                        "reason": "Tiempo agotado"
-                    }, 200
+                        "action": "game_ended",
+                        "result": game.result,
+                        "termination_reason": game.termination_reason,
+                        "white_elo_change": game.white_elo_change,
+                        "black_elo_change": game.black_elo_change,
+                    }, None
 
             return False, "El rival aún tiene tiempo", WSErrorCodes.GENERIC_ERROR
 
         return False, "Tipo de reclamación inválida", WSErrorCodes.GENERIC_ERROR
+
 
 class EloService:
     K_FACTOR = 32
@@ -405,6 +429,9 @@ class EloService:
         black_elo = getattr(black_player, f"elo_{mode}", 1200)
 
         new_white_elo, new_black_elo = EloService._calculate_new_elos(white_elo, black_elo, game.result)
+
+        game.white_elo_change = new_white_elo - white_elo
+        game.black_elo_change = new_black_elo - black_elo
 
         setattr(white_player, f"elo_{mode}", new_white_elo)
         setattr(black_player, f"elo_{mode}", new_black_elo)
