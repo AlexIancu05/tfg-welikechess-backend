@@ -20,7 +20,7 @@ class GameViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
     def get_serializer_class(self):
-        if self.action in ["retrieve", "my_games"]:
+        if self.action == "retrieve":
             return GameDetailSerializer
         return GameListSerializer
 
