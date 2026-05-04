@@ -1,4 +1,6 @@
 import requests
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.core.cache import cache
 from django.db import transaction
 from rest_framework import status
@@ -107,6 +109,51 @@ class UserService:
 
         return User.objects.order_by(f"-{elo_field}")[:limit]
 
+class NotificationService:
+    @staticmethod
+    def _send_to_user(user_id, notification_type, payload):
+        """
+        Función base para enviar mensajes a la sala personal de un usuario
+        """
+
+        channel_layer = get_channel_layer()
+        group_name = f"notifications_{user_id}"
+
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                "type": "push_notification",
+                "notification_type": notification_type,
+                "payload": payload
+            }
+        )
+
+    @staticmethod
+    def notify_friend_request(from_user, to_user_id):
+        """
+        Avisa de una nueva solicitud de amistad
+        """
+        payload = {
+            "from_user_id": str(from_user.id),
+            "from_username": from_user.username,
+            "message": f"{from_user.username} te ha enviado una solicitud de amistad"
+        }
+        NotificationService._send_to_user(to_user_id, "friend_request", payload)
+
+    @staticmethod
+    def notify_game_challenge(from_user, to_user_id, mode, initial_time, increment):
+        """
+        Avisa de un reto para jugar
+        """
+        payload = {
+            "from_user_id": str(from_user.id),
+            "from_username": from_user.username,
+            "mode": mode,
+            "initial_time": initial_time,
+            "increment": increment,
+            "message": f"{from_user.username} te ha retado a una partida de {mode}."
+        }
+        NotificationService._send_to_user(to_user_id, "game_challenge", payload)
 
 class FriendService:
     @staticmethod
