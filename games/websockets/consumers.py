@@ -3,7 +3,7 @@ import os
 
 import chess
 import chess.engine
-from asgiref.sync import async_to_sync
+from asgiref.sync import async_to_sync, sync_to_async
 from channels.generic.websocket import WebsocketConsumer, AsyncWebsocketConsumer
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -228,23 +228,24 @@ class GameConsumer(WebsocketConsumer):
         color = self._get_player_color()
         now = timezone.now()
 
-        if color == "w":
-            self.game.white_disconnected_at = now
-        elif color == "b":
-            self.game.black_disconnected_at = now
-        self.game.save(update_fields=['white_disconnected_at', 'black_disconnected_at'])
+        if self.game.status == "in_progress":
+            if color == "w":
+                self.game.white_disconnected_at = now
+            elif color == "b":
+                self.game.black_disconnected_at = now
+            self.game.save(update_fields=['white_disconnected_at', 'black_disconnected_at'])
 
-        async_to_sync(self.channel_layer.group_send)(
-            self.room_group_name,
-            {
-                "type": "game_message",
-                "message": {
-                    "action": "player_disconnected",
-                    "color": color,
-                    "timestamp": now.isoformat()
+            async_to_sync(self.channel_layer.group_send)(
+                self.room_group_name,
+                {
+                    "type": "game_message",
+                    "message": {
+                        "action": "player_disconnected",
+                        "color": color,
+                        "timestamp": now.isoformat()
+                    }
                 }
-            }
-        )
+            )
 
         async_to_sync(self.channel_layer.group_discard)(
             self.room_group_name,
@@ -439,7 +440,7 @@ class AIGameConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, code):
         if self.engine is not None:
-            await self.engine.quit()
+            await sync_to_async(self.engine.quit)()
 
     async def receive(self, text_data=None, bytes_data=None):
         if text_data is None:

@@ -2,7 +2,7 @@ import json
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 
-class NotificacionConsumer(AsyncWebsocketConsumer):
+class NotificationConsumer(AsyncWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -16,7 +16,7 @@ class NotificacionConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        self.group_name = f"notificacions_{self.user.get_username()}"
+        self.group_name = f"notifications_{self.user.get_username()}"
 
         await self.channel_layer.group_add(
             self.group_name,
@@ -26,7 +26,7 @@ class NotificacionConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, code):
-        if hasattr(self, "group_name"):
+        if self.group_name:
             await self.channel_layer.group_discard(
                 self.group_name,
                 self.channel_name
@@ -34,7 +34,7 @@ class NotificacionConsumer(AsyncWebsocketConsumer):
 
     async def push_notification(self, event):
         """
-        Envía el JSON de notificación al Frontend.
+        Envía el JSON de notificatión al Frontend.
         """
 
         await self.send(text_data=json.dumps(
