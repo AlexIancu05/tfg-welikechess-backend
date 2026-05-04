@@ -430,12 +430,7 @@ class AIGameConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
         self.board = chess.Board()
-        self.engine_path = os.path.join(
-            settings.BASE_DIR,
-            "engines",
-            "stockfish",
-            "stockfish-windows-x86-64-avx2.exe"
-        )
+        self.engine_path = settings.STOCKFISH_PATH
 
         self.transport, self.engine = await chess.engine.popen_uci(self.engine_path)
 
