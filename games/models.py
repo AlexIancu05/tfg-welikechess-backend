@@ -116,7 +116,7 @@ class Game(models.Model):
     def __str__(self):
         w_name = self.white_player.username if self.white_player else "Eliminado"
         b_name = self.black_player.username if self.black_player else "Eliminado"
-        return f"{self.id[:8]} - {w_name} vs {b_name} ({self.status})"
+        return f"{str(self.id)[:8]} - {w_name} vs {b_name} ({self.status})"
 
 
 class GameMessage(models.Model):
