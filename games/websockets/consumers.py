@@ -170,7 +170,7 @@ class GameConsumer(WebsocketConsumer):
 
         self.accept()
 
-        # Control de seguridad del usuario, si no esta autenticado, se cierra el Websocket
+        # Control de seguridad del usuario, si no está autenticado, se cierra el Websocket
         if not self.user.is_authenticated:
             self.send_error(message="Usuario no autenticado", close_connection=True,
                             close_code=WSErrorCodes.UNAUTHENTICATED)
@@ -440,7 +440,7 @@ class AIGameConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, code):
         if self.engine is not None:
-            await sync_to_async(self.engine.quit)()
+            await self.engine.quit()
 
     async def receive(self, text_data=None, bytes_data=None):
         if text_data is None:

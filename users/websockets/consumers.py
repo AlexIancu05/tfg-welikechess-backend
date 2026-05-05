@@ -16,7 +16,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        self.group_name = f"notifications_{self.user.get_username()}"
+        self.group_name = f"notifications_{self.user.id}"
 
         await self.channel_layer.group_add(
             self.group_name,

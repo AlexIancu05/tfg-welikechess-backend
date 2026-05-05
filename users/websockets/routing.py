@@ -4,5 +4,5 @@ from users.websockets import consumers
 
 # noinspection PyTypeChecker
 websocket_urlpatterns = [
-    re_path(r"ws/notifications/$", consumers.NotificacionConsumer.as_asgi()),
+    re_path(r"ws/notifications/$", consumers.NotificationConsumer.as_asgi()),
 ]
