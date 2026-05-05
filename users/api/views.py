@@ -6,7 +6,7 @@ from games.api.serializers import PlayerSimpleSerializer
 from users.api.permissions import IsOwnerOrReadOnly
 from users.api.serializers import *
 from users.models import FriendRequest
-from users.services import get_external_ranking, FriendService
+from users.services import FriendService
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -53,17 +53,6 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save()
-
-    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
-    def global_ranking(self, request):
-        """
-        Endpoint: api/users/global_ranking/?type=bullet
-        Lee el tipo de ranking desde la URL y lo solicita al servicio.
-        """
-        perf_type = request.query_params.get("type", "blitz")
-        data = get_external_ranking(perf_type)
-
-        return Response(data)
 
     @action(detail=False, methods=["get"], url_path="leaderboard")
     def leaderboard(self, request):
