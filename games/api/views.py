@@ -1,10 +1,13 @@
+import random
+
 from django.db.models import Q
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
 from games.api.serializers import *
-from games.models import Game
+from games.models import Game, Puzzle
 
 
 class GameViewSet(viewsets.ReadOnlyModelViewSet):
@@ -27,7 +30,7 @@ class GameViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["get"], url_path="my-games")
     def my_games(self, request):
         """
-        Devuelve el historial del usuario que hace la peticion
+        Devuelve el historial del usuario que hace la petición
         Endpoint: GET /api/games/my-history/
         """
 
@@ -42,7 +45,7 @@ class GameViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["get"], url_path="active")
     def active_games(self, request):
         """
-        Devuelve todas las partidas que se estan jugando actualmente
+        Devuelve todas las partidas que se están jugando actualmente
         Endpoint: GET /api/games/active/
         """
 
@@ -53,7 +56,7 @@ class GameViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["get"], url_path=r"player/(?P<username>[^/.]+)")
     def find_by_player(self, request, username=None):
         """
-        Devuelve el historial publico de un jugador
+        Devuelve el historial público de un jugador
         Endpoint: GET /api/games/player/username_jugador
         """
 
@@ -64,3 +67,51 @@ class GameViewSet(viewsets.ReadOnlyModelViewSet):
 
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
+
+
+class PuzzleViewSet(viewsets.GenericViewSet):
+    permission_classes = [permissions.AllowAny]
+
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
+
+    queryset = Puzzle.objects.all()
+
+    @action(detail=False, methods=["get"], url_path="random")
+    def random_puzzle(self, request):
+        """
+        Devuelve un puzle aleatorio adaptado al Elo del usuario
+        Endpoint: GET /api/games/puzzles/random/?elo=1400 (el parámetro es opcional)
+        """
+
+        if "elo" in request.query_params:
+            try:
+                target_elo = int(request.query_params.get("elo"))
+            except ValueError:
+                target_elo = 1200
+        elif request.user.is_authenticated:
+            target_elo = getattr(request.user, 'elo_blitz', 1200)  # Usamos el de blitz
+        else:
+            target_elo = 1200  # Invitado puro sin historial local
+
+        min_elo = target_elo - 100
+        max_elo = target_elo + 100
+
+        puzzles_qs = self.get_queryset().filter(
+            rating__gte=min_elo,
+            rating__lte=max_elo
+        )[:50]
+
+        if not puzzles_qs.exists():
+            return Response({"error": "No hay puzles en este rango"}, status=404)
+
+        puzzle = random.choice(puzzles_qs)
+        parsed_moves = puzzle.get_parsed_moves()
+
+        return Response({
+            "id": puzzle.lichess_id,
+            "rating": puzzle.rating,
+            "themes": puzzle.themes.split(","),
+            "initial_fen": puzzle.fen,
+            "blunder_move": parsed_moves["blunder_move"],
+            "solution": parsed_moves["solution"]
+        })
