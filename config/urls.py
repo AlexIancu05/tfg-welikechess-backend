@@ -16,5 +16,5 @@ urlpatterns = [
     path("api/users/", include("users.api.urls")),
     path("api/games/", include("games.api.urls")),
     path("api/chat/", include("chat.api.urls")),
-    path("api/core/verify-master-password/", verify_master_password, name="verify-master-password")
+    path("api/core/verify-master-password", verify_master_password, name="verify-master-password")
 ]
