@@ -8,7 +8,7 @@ from rest_framework import status
 @permission_classes([AllowAny])
 def verify_master_password(request):
     """
-    Endpoint: POST /api/core/verify-password/
+    Endpoint: POST /api/core/verify-master-password/
     Recibe: {"password": "la_contraseña"}
     """
     password = request.data.get("password")
