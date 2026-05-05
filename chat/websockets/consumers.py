@@ -90,6 +90,28 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
                 "created_at": str(msg.created_at)
             }
         )
+        
+        other_user_id = await self.get_other_user_id(self.room_id, self.user.id)
+        if other_user_id:
+            await self.channel_layer.group_send(
+                f"notifications_{other_user_id}",
+                {
+                    "type": "push_notification",
+                    "notification_type": "message",
+                    "payload": {
+                        "message": msg.text,
+                        "username": self.user.username,
+                    }
+                }
+            )
+
+    @database_sync_to_async
+    def get_other_user_id(self, room_id, my_id):
+        try:
+            room = PrivateChatRoom.objects.get(id=room_id)
+            return room.user2_id if room.user1_id == my_id else room.user1_id
+        except PrivateChatRoom.DoesNotExist:
+            return None
 
     async def chat_message(self, event):
         """
