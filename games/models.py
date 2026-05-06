@@ -141,3 +141,27 @@ class GameMessage(models.Model):
     def __str__(self):
         sender_name = self.sender.username if self.sender else "Sistema/Eliminado"
         return f"[{self.game.id}] {sender_name}: [{self.text[:20]}]"
+
+
+class Puzzle(models.Model):
+    lichess_id = models.CharField(max_length=20, unique=True)
+
+    fen = models.CharField(max_length=150)
+    moves = models.TextField()
+    rating = models.IntegerField()
+    themes = models.TextField(blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["rating"])
+        ]
+
+    def __str__(self):
+        return f"Puzle {self.lichess_id} ({self.rating} Elo)"
+
+    def get_parsed_moves(self):
+        move_list = self.moves.split(" ")
+        return {
+            "blunder_move": move_list[0],
+            "solution": move_list[1:]
+        }
