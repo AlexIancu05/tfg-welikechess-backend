@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from games.models import Game
+from games.models import Game, Puzzle, PuzzleAttempt
 
 
 class PlayerSimpleSerializer(serializers.ModelSerializer):
@@ -73,3 +73,15 @@ class GameTotalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Game
         fields = "__all__"
+
+class PuzzleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Puzzle
+        fields = ["lichess_id", "rating", "themes", "fen"]
+
+class PuzzleAttemptSerializer(serializers.ModelSerializer):
+    puzzle = PuzzleSerializer(read_only=True)
+
+    class Meta:
+        model = PuzzleAttempt
+        fields = ["puzzle", "successful", "created_at"]

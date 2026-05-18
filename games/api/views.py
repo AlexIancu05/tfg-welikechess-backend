@@ -3,6 +3,7 @@ import random
 from django.db.models import Q, Count
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
+from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
@@ -127,9 +128,9 @@ class PuzzleViewSet(viewsets.GenericViewSet):
             except ValueError:
                 target_elo = 1200
         elif request.user.is_authenticated:
-            target_elo = getattr(request.user, 'elo_blitz', 1200)  # Usamos el de blitz
+            target_elo = getattr(request.user, 'elo_blitz', 1200)
         else:
-            target_elo = 1200  # Invitado puro sin historial local
+            target_elo = 1200
 
         min_elo = target_elo - 100
         max_elo = target_elo + 100
@@ -137,7 +138,12 @@ class PuzzleViewSet(viewsets.GenericViewSet):
         puzzles_qs = self.get_queryset().filter(
             rating__gte=min_elo,
             rating__lte=max_elo
-        )[:50]
+        )
+
+        if request.user.is_authenticated:
+            puzzles_qs = puzzles_qs.exclude(puzzleattempt__user=request.user)
+
+        puzzles_qs = puzzles_qs[:50]
 
         if not puzzles_qs.exists():
             return Response({"error": "No hay puzles en este rango"}, status=404)
@@ -153,3 +159,46 @@ class PuzzleViewSet(viewsets.GenericViewSet):
             "blunder_move": parsed_moves["blunder_move"],
             "solution": parsed_moves["solution"]
         })
+
+    @action(detail=False, methods=["post"], url_path="solve", permission_classes=[permissions.IsAuthenticated])
+    def solve_puzzle(self, request):
+        """
+        Guarda el intento de un puzle.
+        Endpoint: POST /api/games/puzzles/solve/
+        Body: {"lichess_id": "00sLi", "successful": true}
+        """
+        lichess_id = request.data.get("lichess_id")
+        successful = request.data.get("successful")
+
+        if lichess_id is None or successful is None:
+            return Response({"error": "Faltan datos (lichess_id, successful)"}, status=400)
+
+        puzzle = get_object_or_404(Puzzle, lichess_id=lichess_id)
+
+        attempt, created = PuzzleAttempt.objects.get_or_create(
+            user=request.user,
+            puzzle=puzzle,
+            defaults={'successful': successful}
+        )
+
+        if not created:
+            return Response({"message": "Este puzle ya estaba en tu historial."}, status=200)
+
+        return Response({"message": "Intento guardado correctamente."}, status=201)
+
+    @action(detail=False, methods=["get"], url_path="history", permission_classes=[permissions.IsAuthenticated])
+    def history(self, request):
+        """
+        Devuelve el historial de puzles jugados por el usuario.
+        Endpoint: GET /api/games/puzzles/history/
+        """
+        attempts = PuzzleAttempt.objects.filter(user=request.user).select_related('puzzle').order_by('-created_at')
+
+        page = self.paginate_queryset(attempts)
+
+        if page is not None:
+            serializer = PuzzleAttemptSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = PuzzleAttemptSerializer(attempts, many=True)
+        return Response(serializer.data)
