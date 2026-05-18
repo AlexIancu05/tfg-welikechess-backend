@@ -1,6 +1,6 @@
 import random
 
-from django.db.models import Q
+from django.db.models import Q, Count
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -67,6 +67,44 @@ class GameViewSet(viewsets.ReadOnlyModelViewSet):
 
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=["get"], url_path=r"player/(?P<username>[^/.]+)/stats")
+    def player_stats(self, request, username=None):
+        """
+        Devuelve las estadísticas de un jugador (Total, Victorias, Derrotas, Empates)
+        Endpoint: GET /api/games/player/username_jugador/stats/
+        """
+
+        qs = self.get_queryset().filter(
+            Q(white_player__username__iexact=username) |
+            Q(black_player__username__iexact=username),
+            status="completed"
+        )
+
+        stats = qs.aggregate(
+            total_games=Count("id"),
+            games_won=Count("id", filter=Q(winner__username__iexact=username)),
+            games_draw=Count("id", filter=Q(winner__isnull=True))
+        )
+
+        total = stats["total_games"]
+        won = stats["games_won"]
+        draw = stats["games_draw"]
+        lost = total - won - draw
+
+        winrate = round((won / total * 100), 2) if total > 0 else 0
+        lossrate = round((lost / total * 100), 2) if total > 0 else 0
+        drawrate = round((draw / total * 100), 2) if total > 0 else 0
+
+        return Response({
+            "total_games": total,
+            "games_won": won,
+            "games_lost": lost,
+            "games_draw": draw,
+            "winrate": winrate,
+            "lostrate": lossrate,
+            "drawrate": drawrate
+        })
 
 
 class PuzzleViewSet(viewsets.GenericViewSet):
