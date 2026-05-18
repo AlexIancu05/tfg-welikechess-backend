@@ -102,7 +102,7 @@ class GameViewSet(viewsets.ReadOnlyModelViewSet):
             "games_lost": lost,
             "games_draw": draw,
             "winrate": winrate,
-            "lostrate": lossrate,
+            "lossrate": lossrate,
             "drawrate": drawrate
         })
 
