@@ -2,7 +2,7 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
 from games.services import GameService
-from users.models import User
+from users.models import User, FriendRequest
 from users.services import UserService
 
 
@@ -62,7 +62,7 @@ class UserPublicSerializer(serializers.ModelSerializer):
 
     def get_recent_games(self, user):
         """
-        Obtiene las ultimas 10 partidas acabadas del usuario
+        Obtiene las últimas 10 partidas acabadas del usuario
         """
         return GameService.find_user_recent_games(user, limit=10)
 
@@ -108,13 +108,9 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
     def get_recent_games(self, user):
         """
-        Obtiene las ultimas 10 partidas acabadas del usuario
+        Obtiene las últimas 10 partidas acabadas del usuario
         """
         return GameService.find_user_recent_games(user, limit=10)
-
-
-from users.models import FriendRequest
-
 
 class PendingFriendRequestSerializer(serializers.ModelSerializer):
     sender_username = serializers.CharField(source='sender.username', read_only=True)
