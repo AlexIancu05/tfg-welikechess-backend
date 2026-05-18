@@ -1,14 +1,17 @@
 import random
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.db.models import Q, Count
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
 from games.api.serializers import *
-from games.models import Game, Puzzle
+from games.models import Game, Puzzle, GameChallenge
+from users.services import UserService
 
 
 class GameViewSet(viewsets.ReadOnlyModelViewSet):
@@ -202,3 +205,93 @@ class PuzzleViewSet(viewsets.GenericViewSet):
 
         serializer = PuzzleAttemptSerializer(attempts, many=True)
         return Response(serializer.data)
+
+class ChallengeViewSet(viewsets.GenericViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = GameChallenge.objects.all()
+
+    @action(detail=False, methods=["post"], url_path="create")
+    def create_challenge(self, request):
+        """
+        El Jugador A reta al Jugador B.
+        Body: {"receiver_username": "username", "mode": "blitz", "initial_time": 300}
+        """
+
+        sender = request.user
+        receiver_username = request.data.get("receiver_username")
+        receiver = UserService.find_by_username(receiver_username)
+        mode = request.data.get("mode", "blitz")
+        initial_time = request.data.get("initial_time", 300)
+        increment = request.data.get("increment", 0)
+
+        if sender == receiver:
+            return Response({"error": "No puedes retarte a ti mismo"}, status=status.HTTP_400_BAD_REQUEST)
+
+        pending_challenge = GameChallenge.objects.create(
+            sender=sender,
+            receiver=receiver,
+            mode=mode,
+            initial_time=initial_time,
+            increment=increment
+        )
+
+        channel_layer = get_channel_layer()
+        group_name = f"notifications_{receiver.id}"
+
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                "type": "push_notification",
+                "notification_type": "new_challenge",
+                "payload": {
+                    "challenge_id": pending_challenge.id,
+                    "sender_username": sender.username,
+                    "mode": pending_challenge.mode,
+                    "initial_time": pending_challenge.initial_time,
+                    "increment": pending_challenge.increment
+                }
+            }
+        )
+
+        return Response({"message": "Reto enviado", "challenge_id": pending_challenge.id}, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["post"], url_path="accept")
+    def accept_challenge(self, request, pk=None):
+        """
+        El Jugador B acepta el reto. Se crea la partida.
+        Endpoint: POST /api/games/challenges/{id}/accept/
+        """
+
+        pending_challenge = get_object_or_404(GameChallenge, pk=pk, receiver=request.user, status="waiting")
+        pending_challenge.status = "accepted"
+        pending_challenge.save()
+
+        if random.choice([True, False]):
+            white, black = pending_challenge.sender, pending_challenge.receiver
+        else:
+            white, black = pending_challenge.receiver, pending_challenge.sender
+
+        game = Game.objects.create(
+            white_player=white,
+            black_player=black,
+            status="in_progress",
+            mode=pending_challenge.mode,
+            initial_time=pending_challenge.initial_time,
+            increment=pending_challenge.increment,
+            ranked=False
+        )
+
+        channel_layer = get_channel_layer()
+
+        async_to_sync(channel_layer.group_send)(
+            f"notifications_{pending_challenge.sender.id}",
+            {
+                "type": "push_notification",
+                "notification_type": "challenge_accepted",
+                "payload": {
+                    "game_id": str(game.id)
+                }
+            }
+        )
+
+        return Response({"message": "Reto aceptado", "game_id": game.id}, status=status.HTTP_200_OK)
