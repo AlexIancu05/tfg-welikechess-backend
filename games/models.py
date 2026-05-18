@@ -181,3 +181,34 @@ class PuzzleAttempt(models.Model):
             models.Index(fields=["user", "puzzle"])
         ]
         unique_together = ("user", "puzzle")
+
+class GameChallenge(models.Model):
+    STATUS_CHOICES = [
+        ("waiting", "Pendiente"),
+        ("accepted", "Aceptado"),
+        ("declined", "Rechazado")
+    ]
+
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="sent_challenges"
+    )
+    receiver = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="received_challenges"
+    )
+
+    mode = models.CharField(max_length=10, choices=Game.MODE_CHOICES, default="blitz")
+    initial_time = models.PositiveIntegerField(default=300)
+    increment = models.PositiveIntegerField(default=0)
+
+    status = models.CharField(max_length=15, choices=Game.STATUS_CHOICES, default="waiting")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Reto: {self.sender.username} a {self.receiver.username} ({self.status})"

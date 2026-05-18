@@ -2,6 +2,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.db import transaction
 from rest_framework import status
+from rest_framework.generics import get_object_or_404
 
 from users.models import User, FriendRequest
 
@@ -30,12 +31,9 @@ class UserService:
     def find_by_username(username):
         """
         Busca y devuelve un usuario por su username.
-        Devuelve None si no lo encuentra.
+        Lanza 404 si no lo encuentra
         """
-        try:
-            return User.objects.get(username=username)
-        except User.DoesNotExist:
-            return None
+        return get_object_or_404(User, username__iexact=username)
 
     @staticmethod
     def get_leaderboard(mode="blitz", limit=10):
