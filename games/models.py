@@ -165,3 +165,19 @@ class Puzzle(models.Model):
             "blunder_move": move_list[0],
             "solution": move_list[1:]
         }
+
+class PuzzleAttempt(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="puzzle_attempts"
+    )
+    puzzle = models.ForeignKey(Puzzle, on_delete=models.CASCADE)
+    successful = models.BooleanField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "puzzle"])
+        ]
+        unique_together = ("user", "puzzle")
