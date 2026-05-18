@@ -204,7 +204,7 @@ class GameChallenge(models.Model):
     initial_time = models.PositiveIntegerField(default=300)
     increment = models.PositiveIntegerField(default=0)
 
-    status = models.CharField(max_length=15, choices=Game.STATUS_CHOICES, default="waiting")
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default="waiting")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
