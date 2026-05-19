@@ -1,16 +1,15 @@
 import os
-
-from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
-
-import chat.websockets.routing
-import games.websockets.routing
-import users.websockets.routing
-from games.websockets.middleware import JWTAuthMiddleware
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 DJANGO_ASGI_APP = get_asgi_application()
+
+from channels.routing import ProtocolTypeRouter, URLRouter
+import chat.websockets.routing
+import games.websockets.routing
+import users.websockets.routing
+from games.websockets.middleware import JWTAuthMiddleware
 
 application = ProtocolTypeRouter(
     {
