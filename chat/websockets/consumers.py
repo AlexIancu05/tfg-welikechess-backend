@@ -113,12 +113,6 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
         except PrivateChatRoom.DoesNotExist:
             return None
 
-        receiver_id = await self.get_receiver_id(self.user.id, self.room_id)
-        if receiver_id:
-            await database_sync_to_async(NotificationService.notify_new_message)(
-                self.user, receiver_id, msg.text
-            )
-
     async def chat_message(self, event):
         """
         Envía el mensaje de vuelta al WebSocket del Frontend
