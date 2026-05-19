@@ -12,7 +12,7 @@ services:
     build: .
     container_name: django_backend
     restart: always
-    command: daphne -b 0.0.0.0 -p 8000 tu_proyecto_config.asgi:application
+    command: daphne -b 0.0.0.0 -p 8000 config.asgi:application
     env_file:
       - .env
     expose:
