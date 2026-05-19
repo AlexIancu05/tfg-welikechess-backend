@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis_django
+    restart: always
+    expose:
+      - "6379"
+
+  web:
+    build: .
+    container_name: django_backend
+    restart: always
+    command: daphne -b 0.0.0.0 -p 8000 tu_proyecto_config.asgi:application
+    env_file:
+      - .env
+    expose:
+      - "8000"
+    depends_on:
+      - redis
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - web
