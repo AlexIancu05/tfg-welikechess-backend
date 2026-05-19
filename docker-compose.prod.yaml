@@ -32,7 +32,7 @@ services:
     env_file:
       - .env
     environment:
-      - ADMIN_ALLOWED_IP=${ADMIN_ALLOWED_IP}
+      - ADMIN_IP=${ADMIN_IP}
     volumes:
       - ./nginx.conf:/etc/nginx/templates/default.conf.template
       - static_volume:/app/staticfiles
