@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY config/requirements/base.txt /app/
+COPY config/requirements/ /app/config/requirements/
 RUN pip install --no-cache-dir -r config/requirements/base.txt
 
 COPY . /app/
