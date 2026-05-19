@@ -18,8 +18,7 @@ class Game(models.Model):
     MODE_CHOICES = [
         ('bullet', 'Bullet'),
         ('blitz', 'Blitz'),
-        ('rapid', 'Rapid'),
-        ('classical', 'Clásica'),
+        ('rapid', 'Rapid')
     ]
 
     RESULT_CHOICES = [
@@ -61,21 +60,28 @@ class Game(models.Model):
         related_name='games_won'
     )
 
-    #Partida
+    # Partida
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="waiting")
     mode = models.CharField(max_length=10, choices=MODE_CHOICES, default='blitz')
     initial_time = models.PositiveIntegerField(default=600)
     increment = models.PositiveIntegerField(default=0)
-    #Ranked o Casual
+    # Ranked o Casual
     ranked = models.BooleanField(default=True)
 
-    #Estado del tablero
+    # Relojes de la partida (segundos)
+    white_time_left = models.FloatField(null=True, blank=True)
+    black_time_left = models.FloatField(null=True, blank=True)
+    last_move_at = models.DateTimeField(null=True, blank=True)
+
+    # Desconexiones
+    white_disconnected_at = models.DateTimeField(null=True, blank=True)
+    black_disconnected_at = models.DateTimeField(null=True, blank=True)
+
+    # Estado del tablero
     current_fen = models.CharField(max_length=120, default=chess.STARTING_FEN)
 
-    #Historial de movimientos
+    # Historial de movimientos
     pgn = models.TextField(blank=True, default="")
-
-    last_move_at = models.DateTimeField(null=True, blank=True)
 
     white_elo_change = models.IntegerField(default=0)
     black_elo_change = models.IntegerField(default=0)
@@ -88,7 +94,10 @@ class Game(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["status", "created_at"]),
+            models.Index(
+                fields=["status", "mode", "initial_time", "increment", "created_at"],
+                name="matchmaking_idx"
+            ),
             models.Index(fields=["white_player"]),
             models.Index(fields=["black_player"]),
             models.Index(fields=["winner"])
@@ -105,4 +114,101 @@ class Game(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.id} - {self.status}"
+        w_name = self.white_player.username if self.white_player else "Eliminado"
+        b_name = self.black_player.username if self.black_player else "Eliminado"
+        return f"{str(self.id)[:8]} - {w_name} vs {b_name} ({self.status})"
+
+
+class GameMessage(models.Model):
+    game = models.ForeignKey(
+        "Game",
+        on_delete=models.CASCADE,
+        related_name="messages",
+        null=False
+    )
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    text = models.TextField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["game", "created_at"]
+
+    def __str__(self):
+        sender_name = self.sender.username if self.sender else "Sistema/Eliminado"
+        return f"[{self.game.id}] {sender_name}: [{self.text[:20]}]"
+
+
+class Puzzle(models.Model):
+    lichess_id = models.CharField(max_length=20, unique=True)
+
+    fen = models.CharField(max_length=150)
+    moves = models.TextField()
+    rating = models.IntegerField()
+    themes = models.TextField(blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["rating"])
+        ]
+
+    def __str__(self):
+        return f"Puzle {self.lichess_id} ({self.rating} Elo)"
+
+    def get_parsed_moves(self):
+        move_list = self.moves.split(" ")
+        return {
+            "blunder_move": move_list[0],
+            "solution": move_list[1:]
+        }
+
+class PuzzleAttempt(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="puzzle_attempts"
+    )
+    puzzle = models.ForeignKey(Puzzle, on_delete=models.CASCADE)
+    successful = models.BooleanField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "puzzle"])
+        ]
+        unique_together = ("user", "puzzle")
+
+class GameChallenge(models.Model):
+    STATUS_CHOICES = [
+        ("waiting", "Pendiente"),
+        ("accepted", "Aceptado"),
+        ("declined", "Rechazado")
+    ]
+
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="sent_challenges"
+    )
+    receiver = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="received_challenges"
+    )
+
+    mode = models.CharField(max_length=10, choices=Game.MODE_CHOICES, default="blitz")
+    initial_time = models.PositiveIntegerField(default=300)
+    increment = models.PositiveIntegerField(default=0)
+
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default="waiting")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Reto: {self.sender.username} a {self.receiver.username} ({self.status})"

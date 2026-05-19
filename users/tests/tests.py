@@ -1,11 +1,10 @@
 from django.test import TestCase
 from django.urls import reverse
-from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
+from rest_framework.test import APITestCase
 
-from users.models import User
-from users.managers import CustomUserManager
 from users.api.permissions import IsOwnerOrReadOnly
+from users.models import User
 
 
 # ─────────────────────────────────────────────
@@ -90,7 +89,6 @@ class UserModelTest(TestCase):
         self.assertEqual(self.user.elo_blitz, 1200)
         self.assertEqual(self.user.elo_rapid, 1200)
         self.assertEqual(self.user.elo_bullet, 1200)
-        self.assertEqual(self.user.elo_classical, 1200)
 
     def test_username_field_es_email(self):
         self.assertEqual(User.USERNAME_FIELD, "email")

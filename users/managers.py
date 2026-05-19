@@ -1,5 +1,6 @@
 from django.contrib.auth.models import BaseUserManager
 
+
 class CustomUserManager(BaseUserManager):
     """
     Manager personalizado
@@ -15,7 +16,7 @@ class CustomUserManager(BaseUserManager):
         user = self.model(email=email, username=username, **extra_fields)
 
         user.set_password(password)
-        user.save(using = self.db)
+        user.save(using=self._db)
         return user
 
     def create_superuser(self, email, username, password=None, **extra_fields):
