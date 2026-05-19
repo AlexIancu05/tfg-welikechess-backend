@@ -278,6 +278,8 @@ class ChallengeViewSet(viewsets.GenericViewSet):
             mode=pending_challenge.mode,
             initial_time=pending_challenge.initial_time,
             increment=pending_challenge.increment,
+            white_time_left=pending_challenge.initial_time,
+            black_time_left=pending_challenge.initial_time,
             ranked=False
         )
 
@@ -295,3 +297,16 @@ class ChallengeViewSet(viewsets.GenericViewSet):
         )
 
         return Response({"message": "Reto aceptado", "game_id": game.id}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="reject")
+    def reject_challenge(self, request, pk=None):
+        """
+        El Jugador B rechaza el reto.
+        Endpoint: POST /api/games/challenges/{id}/reject/
+        """
+
+        pending_challenge = get_object_or_404(GameChallenge, pk=pk, receiver=request.user, status="waiting")
+        pending_challenge.status = "declined"
+        pending_challenge.save()
+
+        return Response({"message": "Reto rechazado"}, status=status.HTTP_200_OK)

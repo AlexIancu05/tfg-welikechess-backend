@@ -1,21 +1,23 @@
 import csv
 import io
-
 import requests
 from django.core.management import BaseCommand
 import zstandard as zstd
-
 from games.models import Puzzle
 
 
 class Command(BaseCommand):
-    help = "Descarga puzles de Lichess online y los guarda en BBDD"
+    help = "Descarga puzles de Lichess en streaming y los guarda en BBDD"
 
-    # De aquí se sacan los puzles
     LICHESS_URL = "https://database.lichess.org/lichess_db_puzzle.csv.zst"
 
     def add_arguments(self, parser):
-        parser.add_argument("--limit", type=int, default=10000, help="Limite de puzles a importar")
+        parser.add_argument(
+            "--limit",
+            type=int,
+            default=10000,
+            help="Límite de puzles a importar"
+        )
 
     def handle(self, *args, **options):
         limit = options["limit"]
@@ -23,40 +25,48 @@ class Command(BaseCommand):
         self.stdout.write(self.style.WARNING("Limpiando la tabla de puzles actual..."))
         Puzzle.objects.all().delete()
 
+        self.stdout.write(self.style.SUCCESS("Conectando a Lichess (streaming)..."))
+
         puzzles_to_create = []
         count = 0
 
-        self.stdout.write(self.style.SUCCESS(f"Conectando a Lichess"))
-
         try:
-            response = requests.get(self.LICHESS_URL)
+            response = requests.get(self.LICHESS_URL, stream=True)
             response.raise_for_status()
 
-            decompressor = zstd.ZstdDecompressor()
+            dctx = zstd.ZstdDecompressor()
 
-            stream_reader = decompressor.stream_reader(response.raw)
-            text_stream = io.TextIOWrapper(stream_reader, encoding="UTF-8")
+            with dctx.stream_reader(response.raw) as stream_reader:
+                text_stream = io.TextIOWrapper(stream_reader, encoding="utf-8")
+                reader = csv.DictReader(text_stream)
 
-            csv_reader = csv.DictReader(text_stream)
+                for row in reader:
+                    if count >= limit:
+                        break
 
-            for row in csv_reader:
-                if count >= limit:
-                    break
-
-                puzzles_to_create.append(
-                    Puzzle(
-                        lichess_id=row["PuzzleId"],
-                        fen=row["FEN"],
-                        moves=row["Moves"],
-                        rating=int(row["Rating"]),
-                        themes=row["Themes"]
+                    puzzles_to_create.append(
+                        Puzzle(
+                            lichess_id=row["PuzzleId"],
+                            fen=row["FEN"],
+                            moves=row["Moves"],
+                            rating=int(row["Rating"]),
+                            themes=row["Themes"],
+                        )
                     )
-                )
-                count += 1
+                    count += 1
 
-            self.stdout.write(self.style.WARNING(f"Insertando {count} puzles"))
+                    if count % 5000 == 0:
+                        self.stdout.write(f"  → {count} puzles leídos...")
 
+            self.stdout.write(self.style.WARNING(f"Insertando {count} puzles en BBDD..."))
             Puzzle.objects.bulk_create(puzzles_to_create, batch_size=2000)
-            self.stdout.write(self.style.SUCCESS(f"Se han importado {count} puzles"))
+            self.stdout.write(self.style.SUCCESS(f"✓ {count} puzles importados correctamente."))
+
+        except KeyboardInterrupt:
+            self.stdout.write(self.style.ERROR("\nInterrumpido. Insertando lo descargado hasta ahora..."))
+            if puzzles_to_create:
+                Puzzle.objects.bulk_create(puzzles_to_create, batch_size=2000)
+                self.stdout.write(self.style.SUCCESS(f"✓ {len(puzzles_to_create)} puzles guardados."))
+
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f"Error importando puzles: {str(e)}"))
+            self.stdout.write(self.style.ERROR(f"Error: {str(e)}"))

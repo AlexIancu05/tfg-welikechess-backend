@@ -163,8 +163,9 @@ class GameService:
             if move not in board.legal_moves:
                 return False, "Movimiento ilegal", WSErrorCodes.ILLEGAL_MOVE
 
-            # Calcular tiempo gastado
-            elapsed = (now - game.last_move_at).total_seconds()
+            # Calcular tiempo gastado (primer movimiento usa created_at como referencia)
+            reference = game.last_move_at if game.last_move_at is not None else game.created_at
+            elapsed = (now - reference).total_seconds()
 
             if is_white_turn:
                 game.white_time_left = max(0.0, game.white_time_left - elapsed)

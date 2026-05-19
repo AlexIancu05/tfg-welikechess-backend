@@ -101,6 +101,15 @@ class NotificationService:
         }
         NotificationService._send_to_user(to_user_id, "game_challenge", payload)
 
+    @staticmethod
+    def notify_new_message(from_user, to_user_id, message_text):
+        payload = {
+            "from": from_user.username,
+            "message": message_text,
+        }
+        NotificationService._send_to_user(to_user_id, "message", payload)
+
+
 class FriendService:
     @staticmethod
     def send_friend_request(sender, receiver):
