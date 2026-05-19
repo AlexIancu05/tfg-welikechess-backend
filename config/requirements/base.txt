@@ -11,5 +11,4 @@ psycopg2-binary==2.9.11
 django-cors-headers==4.9.0
 python-decouple==3.8
 chess==1.11.2
-requests==2.33.1
 zstandard==0.25.0
