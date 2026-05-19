@@ -25,7 +25,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.WARNING("Limpiando la tabla de puzles actual..."))
         Puzzle.objects.all().delete()
 
-        self.stdout.write(self.style.SUCCESS(f"Conectando a Lichess (streaming)..."))
+        self.stdout.write(self.style.SUCCESS("Conectando a Lichess (streaming)..."))
 
         puzzles_to_create = []
         count = 0
@@ -34,30 +34,29 @@ class Command(BaseCommand):
             response = requests.get(self.LICHESS_URL, stream=True)
             response.raise_for_status()
 
-                dctx = zstd.ZstdDecompressor()
+            dctx = zstd.ZstdDecompressor()
 
-                # stream_reader descomprime sobre la red directamente
-                with dctx.stream_reader(response.raw) as stream_reader:
-                    text_stream = io.TextIOWrapper(stream_reader, encoding="utf-8")
-                    reader = csv.DictReader(text_stream)
+            with dctx.stream_reader(response.raw) as stream_reader:
+                text_stream = io.TextIOWrapper(stream_reader, encoding="utf-8")
+                reader = csv.DictReader(text_stream)
 
-                    for row in reader:
-                        if count >= limit:
-                            break
+                for row in reader:
+                    if count >= limit:
+                        break
 
-                        puzzles_to_create.append(
-                            Puzzle(
-                                lichess_id=row["PuzzleId"],
-                                fen=row["FEN"],
-                                moves=row["Moves"],
-                                rating=int(row["Rating"]),
-                                themes=row["Themes"],
-                            )
+                    puzzles_to_create.append(
+                        Puzzle(
+                            lichess_id=row["PuzzleId"],
+                            fen=row["FEN"],
+                            moves=row["Moves"],
+                            rating=int(row["Rating"]),
+                            themes=row["Themes"],
                         )
-                        count += 1
+                    )
+                    count += 1
 
-                        if count % 5000 == 0:
-                            self.stdout.write(f"  → {count} puzles leídos...")
+                    if count % 5000 == 0:
+                        self.stdout.write(f"  → {count} puzles leídos...")
 
             self.stdout.write(self.style.WARNING(f"Insertando {count} puzles en BBDD..."))
             Puzzle.objects.bulk_create(puzzles_to_create, batch_size=2000)
