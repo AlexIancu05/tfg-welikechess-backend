@@ -31,9 +31,8 @@ class Command(BaseCommand):
         count = 0
 
         try:
-            # stream=True descarga chunk a chunk, nunca carga el fichero entero
-            with requests.get(self.LICHESS_URL, stream=True, timeout=30) as response:
-                response.raise_for_status()
+            response = requests.get(self.LICHESS_URL, stream=True)
+            response.raise_for_status()
 
                 dctx = zstd.ZstdDecompressor()
 

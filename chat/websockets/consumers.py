@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from chat.models import PrivateChatRoom, PrivateMessage
 from core.constants import WSErrorCodes
-from users.services import UserService
+from users.services import UserService, NotificationService
 
 
 class PrivateChatConsumer(AsyncWebsocketConsumer):
@@ -113,6 +113,12 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
         except PrivateChatRoom.DoesNotExist:
             return None
 
+        receiver_id = await self.get_receiver_id(self.user.id, self.room_id)
+        if receiver_id:
+            await database_sync_to_async(NotificationService.notify_new_message)(
+                self.user, receiver_id, msg.text
+            )
+
     async def chat_message(self, event):
         """
         Envía el mensaje de vuelta al WebSocket del Frontend
@@ -126,6 +132,14 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
                 "created_at": event["created_at"]
             }
         ))
+
+    @database_sync_to_async
+    def get_receiver_id(self, sender_id, room_id):
+        try:
+            room = PrivateChatRoom.objects.get(id=room_id)
+            return room.user2_id if room.user1_id == sender_id else room.user1_id
+        except PrivateChatRoom.DoesNotExist:
+            return None
 
     @database_sync_to_async
     def is_room_member(self, user_id, room_id):
