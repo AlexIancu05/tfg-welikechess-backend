@@ -17,3 +17,5 @@ postman
 .postman
 
 engines/stockfish/*
+
+tests.txt
