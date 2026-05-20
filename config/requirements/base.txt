@@ -6,7 +6,7 @@ channels==4.3.2
 channels_redis==4.3.0
 redis==7.2.0
 daphne==4.2.1
-uvicorn==0.41.0
+uvicorn[standard]
 psycopg2-binary==2.9.11
 django-cors-headers==4.9.0
 python-decouple==3.8
