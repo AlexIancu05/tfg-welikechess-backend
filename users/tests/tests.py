@@ -261,9 +261,10 @@ class UserDetailAPITest(APITestCase):
 
     def test_detalle_propio_con_autenticacion(self):
         self.client.force_authenticate(user=self.user)
-        response = self.client.get(self.url)
+        response = self.client.get("/api/users/me/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("email", response.data)
+        self.assertEqual(response.data["email"], self.user.email)
 
     def test_detalle_ajeno_no_muestra_email(self):
         other = User.objects.create_user(
@@ -293,7 +294,7 @@ class UserUpdateAPITest(APITestCase):
 
     def test_update_sin_autenticacion(self):
         response = self.client.patch(self.url, {"username": "hacker"}, format="json")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_update_usuario_ajeno(self):
         self.client.force_authenticate(user=self.other_user)
@@ -348,7 +349,7 @@ class UserDeleteAPITest(APITestCase):
 
     def test_delete_sin_autenticacion(self):
         response = self.client.delete(self.url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_delete_usuario_ajeno(self):
         self.client.force_authenticate(user=self.other_user)
@@ -398,7 +399,7 @@ class IsOwnerOrReadOnlyTest(APITestCase):
 
     def test_escritura_denegada_sin_autenticacion(self):
         response = self.client.patch(self.url, {"username": "anon"}, format="json")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_has_object_permission_owner_retorna_true(self):
         from unittest.mock import MagicMock
