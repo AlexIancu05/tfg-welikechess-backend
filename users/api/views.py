@@ -20,6 +20,21 @@ class UserViewSet(viewsets.ModelViewSet):
 
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_object(self):
+        """
+        Sobrescribimos este método para que las búsquedas por URL 
+        no sean sensibles a mayúsculas/minúsculas.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        username_url = self.kwargs.get(self.lookup_field)
+        
+        obj = get_object_or_404(queryset, username__iexact=username_url)
+        
+        self.check_object_permissions(self.request, obj)
+        
+        return obj
+
     def get_serializer_class(self):
         """
         Cambia de serializador dependiendo del usuario
@@ -54,7 +69,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save()
 
-    @action(detail=False, methods=["get"], url_path="leaderboard")
+    @action(detail=False, methods=["get"], url_path="leaderboard", permission_classes=[permissions.AllowAny])
     def leaderboard(self, request):
         """
         Obtiene el Top X de jugadores.
