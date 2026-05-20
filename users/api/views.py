@@ -69,7 +69,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save()
 
-    @action(detail=False, methods=["get"], url_path="leaderboard", permission_classes=[permissions.AllowAny])
+    @action(detail=False, methods=["get"], url_path="leaderboard")
     def leaderboard(self, request):
         """
         Obtiene el Top X de jugadores.
