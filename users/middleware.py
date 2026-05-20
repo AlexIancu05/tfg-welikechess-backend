@@ -24,4 +24,4 @@ class UpdateLastSeenMiddleware(MiddlewareMixin):
                 user.last_seen = now()
                 user.save(update_fields=['last_seen'])
                 
-                cache.set(cache_key, True, 600)
+                cache.set(cache_key, True, 300)
