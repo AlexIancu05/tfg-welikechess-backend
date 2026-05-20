@@ -16,7 +16,10 @@ MASTER_PASSWORD = config("MASTER_PASSWORD")
 # Security
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = False
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv(), default='127.0.0.1,localhost')
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv(), default="127.0.0.1,localhost")
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS")
 
 # Application definition
 INSTALLED_APPS = [
