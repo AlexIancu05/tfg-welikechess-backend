@@ -57,7 +57,8 @@ class UserPublicSerializer(serializers.ModelSerializer):
             "elo_bullet",
             "date_joined",
             "friends",
-            "recent_games"
+            "recent_games",
+            "last_seen"
         ]
 
     def get_recent_games(self, user):
