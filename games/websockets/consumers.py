@@ -419,7 +419,7 @@ class AIGameConsumer(AsyncWebsocketConsumer):
         if close_connection:
             await self.close(code=close_code)
 
-    _DIFFICULTY_CONFIGS = {
+    DIFFICULTY_CONFIGS = {
         1:  {"UCI_LimitStrength": True,  "UCI_Elo": 1320},
         5:  {"UCI_LimitStrength": True,  "UCI_Elo": 1400},
         7:  {"UCI_LimitStrength": True,  "UCI_Elo": 1800},
@@ -429,7 +429,7 @@ class AIGameConsumer(AsyncWebsocketConsumer):
         18: {"UCI_LimitStrength": True,  "UCI_Elo": 2500},
         20: {"UCI_LimitStrength": False, "Skill Level": 20},
     }
-    _DIFFICULTY_TIME = {
+    DIFFICULTY_TIME = {
         1:  0.05,
         5:  0.1,
         7:  0.2,
@@ -458,8 +458,8 @@ class AIGameConsumer(AsyncWebsocketConsumer):
         self.transport, self.engine = await chess.engine.popen_uci(self.engine_path)
 
         skill_level = int(self.scope["url_route"]["kwargs"].get("skill_level", 5))
-        config = self._DIFFICULTY_CONFIGS.get(skill_level, {"UCI_LimitStrength": True, "UCI_Elo": 1500})
-        self.think_time = self._DIFFICULTY_TIME.get(skill_level, 0.5)
+        config = self.DIFFICULTY_CONFIGS.get(skill_level, {"UCI_LimitStrength": True, "UCI_Elo": 1500})
+        self.think_time = self.DIFFICULTY_TIME.get(skill_level, 0.5)
         await self.engine.configure(config)
 
     async def disconnect(self, code):
