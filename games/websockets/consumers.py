@@ -419,11 +419,33 @@ class AIGameConsumer(AsyncWebsocketConsumer):
         if close_connection:
             await self.close(code=close_code)
 
+    DIFFICULTY_CONFIGS = {
+        1:  {"UCI_LimitStrength": True,  "UCI_Elo": 1320},
+        5:  {"UCI_LimitStrength": True,  "UCI_Elo": 1400},
+        7:  {"UCI_LimitStrength": True,  "UCI_Elo": 1800},
+        10: {"UCI_LimitStrength": True,  "UCI_Elo": 2000},
+        13: {"UCI_LimitStrength": True,  "UCI_Elo": 2300},
+        15: {"UCI_LimitStrength": True,  "UCI_Elo": 2400},
+        18: {"UCI_LimitStrength": True,  "UCI_Elo": 2500},
+        20: {"UCI_LimitStrength": False, "Skill Level": 20},
+    }
+    DIFFICULTY_TIME = {
+        1:  0.05,
+        5:  0.1,
+        7:  0.2,
+        10: 0.3,
+        13: 0.4,
+        15: 0.5,
+        18: 0.5,
+        20: 1.0,
+    }
+
     def __init__(self, *args, **kwargs):
         self.board = None
         self.engine_path = None
         self.transport = None
         self.engine = None
+        self.think_time = 0.5
 
         super().__init__(*args, **kwargs)
 
@@ -436,7 +458,9 @@ class AIGameConsumer(AsyncWebsocketConsumer):
         self.transport, self.engine = await chess.engine.popen_uci(self.engine_path)
 
         skill_level = int(self.scope["url_route"]["kwargs"].get("skill_level", 5))
-        await self.engine.configure({"Skill Level": skill_level})
+        config = self.DIFFICULTY_CONFIGS.get(skill_level, {"UCI_LimitStrength": True, "UCI_Elo": 1500})
+        self.think_time = self.DIFFICULTY_TIME.get(skill_level, 0.5)
+        await self.engine.configure(config)
 
     async def disconnect(self, code):
         if self.engine is not None:
@@ -480,7 +504,7 @@ class AIGameConsumer(AsyncWebsocketConsumer):
                     await self._handle_game_over()
                     return
 
-                result = await self.engine.play(self.board, chess.engine.Limit(time=0.5))
+                result = await self.engine.play(self.board, chess.engine.Limit(time=self.think_time))
                 ai_move = result.move
 
                 if ai_move in self.board.legal_moves:
